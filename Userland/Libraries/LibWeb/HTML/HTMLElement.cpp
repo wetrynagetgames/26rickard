@@ -28,6 +28,7 @@
 #include <LibWeb/HTML/HTMLElement.h>
 #include <LibWeb/HTML/HTMLLabelElement.h>
 #include <LibWeb/HTML/NavigableContainer.h>
+#include <LibWeb/HTML/ToggleEvent.h>
 #include <LibWeb/HTML/VisibilityState.h>
 #include <LibWeb/HTML/Window.h>
 #include <LibWeb/Infra/CharacterTypes.h>
@@ -752,9 +753,21 @@ WebIDL::ExceptionOr<void> HTMLElement::show_popover(bool throw_exception, JS::GC
             m_popover_showing_or_hiding = false;
     });
 
-    // FIXME: 8. If the result of firing an event named beforetoggle, using ToggleEvent, with the cancelable attribute initialized to true, the oldState attribute initialized to "closed", and the newState attribute initialized to "open" at element is false, then run cleanupShowingFlag and return.
+    // 8. If the result of firing an event named beforetoggle, using ToggleEvent, with the cancelable attribute initialized to true, the oldState attribute initialized to "closed", and the newState attribute initialized to "open" at element is false, then run cleanupShowingFlag and return.
+    ToggleEventInit event_init {};
+    event_init.old_state = "closed"_string;
+    event_init.new_state = "open"_string;
+    event_init.cancelable = true;
+    if (!dispatch_event(ToggleEvent::create(realm(), HTML::EventNames::beforetoggle, move(event_init)))) {
+        cleanup_showing_flag->function()();
+        return {};
+    }
 
-    // FIXME: 9. If the result of running check popover validity given element, false, throwExceptions, and document is false, then run cleanupShowingFlag and return.
+    // 9. If the result of running check popover validity given element, false, throwExceptions, and document is false, then run cleanupShowingFlag and return.
+    if (!TRY(check_popover_validity(false, throw_exception, nullptr))) {
+        cleanup_showing_flag->function()();
+        return {};
+    }
 
     // 10. Let shouldRestoreFocus be false.
     //    bool should_restore_focus = false;
@@ -796,7 +809,10 @@ WebIDL::ExceptionOr<void> HTMLElement::show_popover(bool throw_exception, JS::GC
 
     // FIXME: 17. Run the popover focusing steps given element.
     // FIXME: 18. If shouldRestoreFocus is true and element's popover attribute is not in the no popover state, then set element's previously focused element to originallyFocusedElement.
-    // FIXME: 19. Queue a popover toggle event task given element, "closed", and "open".
+
+    // 19. Queue a popover toggle event task given element, "closed", and "open".
+    queue_a_popover_toggle_event_task("closed"_string, "open"_string);
+
     // 20. Run cleanupShowingFlag.
     cleanup_showing_flag->function()();
 
@@ -856,9 +872,19 @@ WebIDL::ExceptionOr<void> HTMLElement::hide_popover(bool, bool fire_events, bool
 
     // 10. If fireEvents is true:
     if (fire_events) {
-        // FIXME: 10.1. Fire an event named beforetoggle, using ToggleEvent, with the oldState attribute initialized to "open" and the newState attribute initialized to "closed" at element.
+        // 10.1. Fire an event named beforetoggle, using ToggleEvent, with the oldState attribute initialized to "open" and the newState attribute initialized to "closed" at element.
+        ToggleEventInit event_init {};
+        event_init.old_state = "open"_string;
+        event_init.new_state = "closed"_string;
+        dispatch_event(ToggleEvent::create(realm(), HTML::EventNames::beforetoggle, move(event_init)));
+
         // FIXME: 10.2. If autoPopoverListContainsElement is true and document's showing auto popover list's last item is not element, then run hide all popovers until given element, focusPreviousElement, and false.
-        // FIXME: 10.3. If the result of running check popover validity given element, true, throwExceptions, and null is false, then run cleanupSteps and return.
+
+        // 10.3. If the result of running check popover validity given element, true, throwExceptions, and null is false, then run cleanupSteps and return.
+        if (!TRY(check_popover_validity(true, throw_exceptions, nullptr))) {
+            cleanup_steps->function()();
+            return {};
+        }
         // 10.4. Request an element to be removed from the top layer given element.
         document.request_an_element_to_be_remove_from_the_top_layer(*this);
     } else {
@@ -869,7 +895,9 @@ WebIDL::ExceptionOr<void> HTMLElement::hide_popover(bool, bool fire_events, bool
     // 12. Set element's popover visibility state to hidden.
     m_popover_visibility_state = PopoverVisibilityState::Hidden;
 
-    // FIXME: 13. If fireEvents is true, then queue a popover toggle event task given element, "open", and "closed".
+    // 13. If fireEvents is true, then queue a popover toggle event task given element, "open", and "closed".
+    if (fire_events)
+        queue_a_popover_toggle_event_task("open"_string, "closed"_string);
 
     // FIXME: 14. Let previouslyFocusedElement be element's previously focused element.
 
@@ -901,6 +929,44 @@ WebIDL::ExceptionOr<bool> HTMLElement::toggle_popover(Optional<bool> force)
     }
     // 4. Return true if this's popover visibility state is showing; otherwise false.
     return popover_visibility_state() == PopoverVisibilityState::Showing;
+}
+
+// https://html.spec.whatwg.org/multipage/popover.html#queue-a-popover-toggle-event-task
+void HTMLElement::queue_a_popover_toggle_event_task(String old_state, String new_state)
+{
+    // 1. If element's popover toggle task tracker is not null, then:
+    if (m_popover_toggle_task_tracker.has_value()) {
+        // 1. Set oldState to element's popover toggle task tracker's old state.
+        old_state = move(m_popover_toggle_task_tracker->old_state);
+
+        // 2. Remove element's popover toggle task tracker's task from its task queue.
+        HTML::main_thread_event_loop().task_queue().remove_tasks_matching([&](auto const& task) {
+            return task.id() == m_popover_toggle_task_tracker->task_id;
+        });
+
+        // 3. Set element's popover toggle task tracker to null.
+        m_popover_toggle_task_tracker->task_id = {};
+    }
+
+    // 2. Queue an element task given the DOM manipulation task source and element to run the following steps:
+    auto task_id = queue_an_element_task(HTML::Task::Source::DOMManipulation, [this, old_state, new_state = move(new_state)]() mutable {
+        // 1. Fire an event named toggle at element, using ToggleEvent, with the oldState attribute initialized to
+        //    oldState and the newState attribute initialized to newState.
+        ToggleEventInit event_init {};
+        event_init.old_state = move(old_state);
+        event_init.new_state = move(new_state);
+
+        dispatch_event(ToggleEvent::create(realm(), HTML::EventNames::toggle, move(event_init)));
+
+        // 2. Set element's popover toggle task tracker to null.
+        m_popover_toggle_task_tracker = {};
+    });
+
+    // 3. Set element's popover toggle task tracker to a struct with task set to the just-queued task and old state set to oldState.
+    m_popover_toggle_task_tracker = ToggleTaskTracker {
+        .task_id = task_id,
+        .old_state = move(old_state),
+    };
 }
 
 void HTMLElement::did_receive_focus()
