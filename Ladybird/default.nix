@@ -2,9 +2,18 @@
 
 mkShell.override { stdenv = gcc13Stdenv; } {
   packages = [
+    autoconf
+    autoconf-archive
+    automake
     ccache
     cmake
+    curl
+    ffmpeg.dev
+    glibc.dev
+    gnutar
+    libglvnd.dev
     libxcrypt
+    nasm
     ninja
     pkg-config
     python3
@@ -14,6 +23,10 @@ mkShell.override { stdenv = gcc13Stdenv; } {
     qt6.qttools
     qt6.qtwayland
     qt6.qtwayland.dev
+    unzip
+    xorg.libX11.dev
+    xorg.xorgproto
+    zip
   ];
 
   shellHook = ''
