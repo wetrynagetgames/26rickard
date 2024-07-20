@@ -1,7 +1,8 @@
-{ pkgs ? import <nixpkgs> { } }: with pkgs;
+{ pkgs ? import <nixpkgs> { } }:
 
-mkShell.override { stdenv = gcc13Stdenv; } {
-  packages = [
+(pkgs.buildFHSEnv {
+  name = "nix-shell";
+  targetPkgs = pkgs: (with pkgs; [
     autoconf
     autoconf-archive
     automake
@@ -27,12 +28,11 @@ mkShell.override { stdenv = gcc13Stdenv; } {
     xorg.libX11.dev
     xorg.xorgproto
     zip
-  ];
-
-  shellHook = ''
+  ]);
+  profile = ''
     # NOTE: This is required to make it find the wayland platform plugin installed
     #       above, but should probably be fixed upstream.
-    export QT_PLUGIN_PATH="$QT_PLUGIN_PATH:${qt6.qtwayland}/lib/qt-6/plugins"
+    export QT_PLUGIN_PATH="$QT_PLUGIN_PATH:${pkgs.qt6.qtwayland}/lib/qt-6/plugins"
     export QT_QPA_PLATFORM="wayland;xcb"
   '';
-}
+}).env
