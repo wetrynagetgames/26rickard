@@ -119,3 +119,7 @@ endif()
 if (HAS_VULKAN)
     target_link_libraries(LibCore PUBLIC Vulkan::Vulkan Vulkan::Headers)
 endif()
+
+if (HAS_UDEV)
+    target_link_libraries(LibCore PUBLIC udev)
+endif()
