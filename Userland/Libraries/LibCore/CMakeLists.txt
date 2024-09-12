@@ -91,6 +91,12 @@ if (HAS_VULKAN)
     list(APPEND SOURCES VulkanContext.cpp)
 endif()
 
+if (HAS_UDEV)
+    list(APPEND SOURCES GamepadFinderLinux.cpp)
+else()
+    list(APPEND SOURCES GamepadFinderUnimplemented.cpp)
+endif()
+
 if (APPLE OR CMAKE_SYSTEM_NAME STREQUAL "GNU")
     list(APPEND SOURCES MachPort.cpp)
 endif()
