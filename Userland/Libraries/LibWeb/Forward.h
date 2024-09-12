@@ -341,6 +341,10 @@ class File;
 class FileList;
 }
 
+namespace Web::Gamepad {
+class GamepadButton;
+}
+
 namespace Web::Geometry {
 class DOMMatrix;
 struct DOMMatrix2DInit;
