@@ -256,6 +256,7 @@ set(SOURCES
     FileAPI/FileReader.cpp
     Gamepad/Gamepad.cpp
     Gamepad/GamepadButton.cpp
+    Gamepad/NavigatorGamepad.cpp
     Geometry/DOMMatrix.cpp
     Geometry/DOMMatrixReadOnly.cpp
     Geometry/DOMPoint.cpp

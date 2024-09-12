@@ -344,6 +344,7 @@ class FileList;
 namespace Web::Gamepad {
 class Gamepad;
 class GamepadButton;
+class NavigatorGamepad;
 }
 
 namespace Web::Geometry {
