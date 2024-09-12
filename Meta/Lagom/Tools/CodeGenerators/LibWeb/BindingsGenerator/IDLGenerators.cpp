@@ -57,6 +57,7 @@ static bool is_platform_object(Type const& type)
         "FileList"sv,
         "FontFace"sv,
         "FormData"sv,
+        "Gamepad"sv,
         "GamepadButton"sv,
         "HTMLCollection"sv,
         "ImageBitmap"sv,
