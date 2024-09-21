@@ -1793,13 +1793,17 @@ void StyleComputer::compute_cascaded_values(StyleProperties& style, DOM::Element
     // @layer-ed author rules
     for (auto const& layer_name : m_qualified_layer_names_in_order) {
         auto layer_rules = collect_matching_rules(element, CascadeOrigin::Author, pseudo_element, layer_name);
-        sort_matching_rules(layer_rules);
-        matching_rule_set.author_rules.append({ layer_name, layer_rules });
+        if (!layer_rules.is_empty()) {
+            sort_matching_rules(layer_rules);
+            matching_rule_set.author_rules.append({ layer_name, layer_rules });
+        }
     }
     // Un-@layer-ed author rules
     auto unlayered_author_rules = collect_matching_rules(element, CascadeOrigin::Author, pseudo_element);
-    sort_matching_rules(unlayered_author_rules);
-    matching_rule_set.author_rules.append({ {}, unlayered_author_rules });
+    if (!unlayered_author_rules.is_empty()) {
+        sort_matching_rules(unlayered_author_rules);
+        matching_rule_set.author_rules.append({ {}, unlayered_author_rules });
+    }
 
     if (mode == ComputeStyleMode::CreatePseudoElementStyleIfNeeded) {
         VERIFY(pseudo_element.has_value());
@@ -1855,8 +1859,8 @@ void StyleComputer::compute_cascaded_values(StyleProperties& style, DOM::Element
 
     // Animation declarations [css-animations-2]
     auto animation_name = [&]() -> Optional<String> {
-        auto animation_name = style.maybe_null_property(PropertyID::AnimationName);
-        if (animation_name.is_null())
+        auto* animation_name = style.maybe_null_property(PropertyID::AnimationName);
+        if (!animation_name)
             return OptionalNone {};
         if (animation_name->is_string())
             return animation_name->as_string().string_value().to_string();
