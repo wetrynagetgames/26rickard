@@ -1,5 +1,6 @@
 import("//Ladybird/compile_qt_resource_file.gni")
 import("//Ladybird/enable_qt.gni")
+import("//Ladybird/enable_appkit.gni")
 import("//Ladybird/link_qt.gni")
 import("//Ladybird/moc_qt_objects.gni")
 
@@ -69,7 +70,6 @@ executable("ladybird_executable") {
     "//Userland/Libraries/LibImageDecoderClient",
     "//Userland/Libraries/LibJS",
     "//Userland/Libraries/LibMain",
-    "//Userland/Libraries/LibProtocol",
     "//Userland/Libraries/LibURL",
     "//Userland/Libraries/LibWeb",
     "//Userland/Libraries/LibWebView",
@@ -110,7 +110,7 @@ executable("ladybird_executable") {
       ":compile_resource_file",
       ":generate_moc",
     ]
-  } else {
+  } else if (enable_appkit) {
     sources += [
       "AppKit/Application/Application.mm",
       "AppKit/Application/ApplicationBridge.cpp",
@@ -156,7 +156,6 @@ executable("ladybird_executable") {
     data_deps += [
       ":ladybird_copy_cacert",
       ":ladybird_copy_config_resources",
-      ":ladybird_copy_emoji",
       ":ladybird_copy_fonts",
       ":ladybird_copy_icons_16x16",
       ":ladybird_copy_icons_32x32",
@@ -185,7 +184,6 @@ executable("headless-browser") {
     "//Userland/Libraries/LibImageDecoderClient",
     "//Userland/Libraries/LibJS",
     "//Userland/Libraries/LibMain",
-    "//Userland/Libraries/LibProtocol",
     "//Userland/Libraries/LibTLS",
     "//Userland/Libraries/LibURL",
     "//Userland/Libraries/LibWeb",
@@ -198,13 +196,6 @@ executable("headless-browser") {
     "HelperProcess.cpp",
     "Utilities.cpp",
   ]
-}
-
-_emoji = read_file("//Meta/emoji-file-list.txt", "list lines")
-emoji = []
-
-foreach(file, _emoji) {
-  emoji += [ "//Base/res/emoji/" + file ]
 }
 
 fonts = [ "//Base/res/fonts/SerenitySans-Regular.ttf" ]
@@ -289,11 +280,6 @@ config_resources = [
 ]
 
 if (current_os != "mac") {
-  copy("ladybird_copy_emoji") {
-    sources = emoji
-    outputs = [ "$root_out_dir/share/Lagom/emoji/{{source_file_part}}" ]
-  }
-
   copy("ladybird_copy_fonts") {
     sources = fonts
     outputs = [ "$root_out_dir/share/Lagom/fonts/{{source_file_part}}" ]
@@ -397,7 +383,6 @@ if (current_os != "mac") {
       "//Userland/Libraries/LibJS",
       "//Userland/Libraries/LibLine",
       "//Userland/Libraries/LibMedia",
-      "//Userland/Libraries/LibProtocol",
       "//Userland/Libraries/LibRIFF",
       "//Userland/Libraries/LibRegex",
       "//Userland/Libraries/LibSyntax",
@@ -405,7 +390,6 @@ if (current_os != "mac") {
       "//Userland/Libraries/LibTextCodec",
       "//Userland/Libraries/LibThreading",
       "//Userland/Libraries/LibURL",
-      "//Userland/Libraries/LibVideo",
       "//Userland/Libraries/LibWasm",
       "//Userland/Libraries/LibWeb",
       "//Userland/Libraries/LibWebSocket",
@@ -444,11 +428,6 @@ if (current_os != "mac") {
       "$root_out_dir/lib/liblagom-xml.dylib",
     ]
     outputs = [ "{{bundle_contents_dir}}/lib/{{source_file_part}}" ]
-  }
-
-  bundle_data("ladybird_emoji") {
-    sources = emoji
-    outputs = [ "{{bundle_resources_dir}}/emoji/{{source_file_part}}" ]
   }
 
   bundle_data("ladybird_fonts") {
