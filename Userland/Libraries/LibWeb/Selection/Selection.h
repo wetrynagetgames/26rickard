@@ -33,6 +33,7 @@ public:
     bool is_collapsed() const;
     unsigned range_count() const;
     String type() const;
+    String direction() const;
     WebIDL::ExceptionOr<JS::GCPtr<DOM::Range>> get_range_at(unsigned index);
     void add_range(JS::NonnullGCPtr<DOM::Range>);
     WebIDL::ExceptionOr<void> remove_range(JS::NonnullGCPtr<DOM::Range>);
@@ -45,6 +46,7 @@ public:
     WebIDL::ExceptionOr<void> extend(JS::NonnullGCPtr<DOM::Node>, unsigned offset);
     WebIDL::ExceptionOr<void> set_base_and_extent(JS::NonnullGCPtr<DOM::Node> anchor_node, unsigned anchor_offset, JS::NonnullGCPtr<DOM::Node> focus_node, unsigned focus_offset);
     WebIDL::ExceptionOr<void> select_all_children(JS::NonnullGCPtr<DOM::Node>);
+    void modify(Optional<String> alter, Optional<String> direction, Optional<String> granularity);
     WebIDL::ExceptionOr<void>
     delete_from_document();
     bool contains_node(JS::NonnullGCPtr<DOM::Node>, bool allow_partial_containment) const;
