@@ -1034,6 +1034,12 @@ constexpr I clamp_to(T value)
     return value;
 }
 
+template<Arithmetic A1, Arithmetic A2>
+static A2 remap(A1 value, A1 low1, A1 high1, A2 low2, A2 high2)
+{
+    return low2 + (value - low1) * (high2 - low2) / (high1 - low1);
+}
+
 #undef CONSTEXPR_STATE
 #undef AARCH64_INSTRUCTION
 }

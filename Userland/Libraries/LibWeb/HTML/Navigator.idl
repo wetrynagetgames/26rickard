@@ -1,6 +1,7 @@
 #import <Clipboard/Clipboard.idl>
 #import <HTML/MimeTypeArray.idl>
 #import <HTML/NavigatorBeacon.idl>
+#import <Gamepad/NavigatorGamepad.idl>
 #import <HTML/NavigatorID.idl>
 #import <HTML/NavigatorLanguage.idl>
 #import <HTML/NavigatorOnLine.idl>
@@ -64,6 +65,7 @@ interface mixin NavigatorAutomationInformation {
 
 Navigator includes NavigatorBeacon;
 Navigator includes NavigatorID;
+Navigator includes NavigatorGamepad;
 Navigator includes NavigatorLanguage;
 Navigator includes NavigatorOnLine;
 Navigator includes NavigatorContentUtils;

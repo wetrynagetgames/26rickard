@@ -133,6 +133,7 @@ if (ENABLE_FUZZERS)
 endif()
 
 CHECK_INCLUDE_FILE(pulse/pulseaudio.h HAVE_PULSEAUDIO)
+CHECK_INCLUDE_FILE(libudev.h HAS_UDEV)
 
 add_library(JSClangPlugin INTERFACE)
 add_library(GenericClangPlugin INTERFACE)
