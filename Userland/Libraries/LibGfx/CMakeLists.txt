@@ -8,6 +8,7 @@ set(SOURCES
     BitmapSequence.cpp
     CMYKBitmap.cpp
     Color.cpp
+    ColorSpace.cpp
     DeltaE.cpp
     DeprecatedPainter.cpp
     DeprecatedPath.cpp
