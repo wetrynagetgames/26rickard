@@ -47,7 +47,7 @@ NonnullRefPtr<PaintingSurface> PaintingSurface::create_with_size(RefPtr<SkiaBack
 {
     auto sk_color_type = to_skia_color_type(color_type);
     auto sk_alpha_type = alpha_type == Gfx::AlphaType::Premultiplied ? kPremul_SkAlphaType : kUnpremul_SkAlphaType;
-    auto image_info = SkImageInfo::Make(size.width(), size.height(), sk_color_type, sk_alpha_type);
+    auto image_info = SkImageInfo::Make(size.width(), size.height(), sk_color_type, sk_alpha_type, SkColorSpace::MakeSRGB());
 
     if (!context) {
         auto bitmap = Gfx::Bitmap::create(color_type, alpha_type, size).value();
@@ -66,7 +66,7 @@ NonnullRefPtr<PaintingSurface> PaintingSurface::wrap_bitmap(Bitmap& bitmap)
     auto color_type = to_skia_color_type(bitmap.format());
     auto alpha_type = bitmap.alpha_type() == Gfx::AlphaType::Premultiplied ? kPremul_SkAlphaType : kUnpremul_SkAlphaType;
     auto size = bitmap.size();
-    auto image_info = SkImageInfo::Make(bitmap.width(), bitmap.height(), color_type, alpha_type);
+    auto image_info = SkImageInfo::Make(bitmap.width(), bitmap.height(), color_type, alpha_type, SkColorSpace::MakeSRGB());
     auto surface = SkSurfaces::WrapPixels(image_info, bitmap.begin(), bitmap.pitch());
     return adopt_ref(*new PaintingSurface(make<Impl>(size, surface, bitmap, nullptr)));
 }
@@ -75,7 +75,7 @@ NonnullRefPtr<PaintingSurface> PaintingSurface::wrap_bitmap(Bitmap& bitmap)
 NonnullRefPtr<PaintingSurface> PaintingSurface::wrap_metal_surface(Gfx::MetalTexture& metal_texture, RefPtr<SkiaBackendContext> context)
 {
     IntSize const size { metal_texture.width(), metal_texture.height() };
-    auto image_info = SkImageInfo::Make(size.width(), size.height(), kBGRA_8888_SkColorType, kPremul_SkAlphaType);
+    auto image_info = SkImageInfo::Make(size.width(), size.height(), kBGRA_8888_SkColorType, kPremul_SkAlphaType, SkColorSpace::MakeSRGB());
     GrMtlTextureInfo mtl_info;
     mtl_info.fTexture = sk_ret_cfp(metal_texture.texture());
     auto backend_render_target = GrBackendRenderTargets::MakeMtl(metal_texture.width(), metal_texture.height(), mtl_info);
@@ -94,7 +94,7 @@ PaintingSurface::~PaintingSurface() = default;
 RefPtr<Bitmap> PaintingSurface::create_snapshot() const
 {
     auto bitmap = Gfx::Bitmap::create(Gfx::BitmapFormat::BGRA8888, Gfx::AlphaType::Premultiplied, size()).value();
-    auto image_info = SkImageInfo::Make(bitmap->width(), bitmap->height(), kBGRA_8888_SkColorType, kPremul_SkAlphaType);
+    auto image_info = SkImageInfo::Make(bitmap->width(), bitmap->height(), kBGRA_8888_SkColorType, kPremul_SkAlphaType, SkColorSpace::MakeSRGB());
     SkPixmap const pixmap(image_info, bitmap->begin(), bitmap->pitch());
     sk_surface().readPixels(pixmap, 0, 0);
     return bitmap;
@@ -104,7 +104,7 @@ void PaintingSurface::read_into_bitmap(Gfx::Bitmap& bitmap)
 {
     auto color_type = to_skia_color_type(bitmap.format());
     auto alpha_type = bitmap.alpha_type() == Gfx::AlphaType::Premultiplied ? kPremul_SkAlphaType : kUnpremul_SkAlphaType;
-    auto image_info = SkImageInfo::Make(bitmap.width(), bitmap.height(), color_type, alpha_type);
+    auto image_info = SkImageInfo::Make(bitmap.width(), bitmap.height(), color_type, alpha_type, SkColorSpace::MakeSRGB());
     SkPixmap const pixmap(image_info, bitmap.begin(), bitmap.pitch());
     m_impl->surface->readPixels(pixmap, 0, 0);
 }
