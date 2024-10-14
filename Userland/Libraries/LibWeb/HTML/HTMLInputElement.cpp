@@ -1880,6 +1880,10 @@ Optional<double> HTMLInputElement::convert_string_to_number(StringView input) co
     if (type_state() == TypeAttributeState::Range)
         return parse_floating_point_number(input);
 
+    // https://html.spec.whatwg.org/multipage/input.html#time-state-(type=time):concept-input-value-string-number
+    if (type_state() == TypeAttributeState::Time)
+        return parse_time_string_to_number(input);
+
     dbgln("HTMLInputElement::convert_string_to_number() not implemented for input type {}", type());
     return {};
 }
@@ -1894,6 +1898,10 @@ String HTMLInputElement::convert_number_to_string(double input) const
     // https://html.spec.whatwg.org/multipage/input.html#range-state-(type=range):concept-input-value-number-string
     if (type_state() == TypeAttributeState::Range)
         return MUST(String::number(input));
+    
+    // https://html.spec.whatwg.org/multipage/input.html#time-state-(type=time):concept-input-value-number-string
+    if (type_state() == TypeAttributeState::Time)
+        return time_as_number_to_string(input);
 
     dbgln("HTMLInputElement::convert_number_to_string() not implemented for input type {}", type());
     return {};
@@ -1916,7 +1924,7 @@ WebIDL::ExceptionOr<JS::GCPtr<JS::Date>> HTMLInputElement::convert_string_to_dat
     // https://html.spec.whatwg.org/multipage/input.html#time-state-(type=time):concept-input-value-string-date
     if (type_state() == TypeAttributeState::Time) {
         // If parsing a time from input results in an error, then return an error;
-        auto maybe_time = parse_time_string(realm(), input);
+        auto maybe_time = parse_time_string_to_date(realm(), input);
         if (maybe_time.is_exception())
             return maybe_time.exception();
 
@@ -2003,6 +2011,10 @@ double HTMLInputElement::default_step() const
     if (type_state() == TypeAttributeState::Range)
         return 1;
 
+    // https://html.spec.whatwg.org/multipage/input.html#time-state-(type=time):concept-input-step-default
+    if (type_state() == TypeAttributeState::Time)
+        return 60;
+
     dbgln("HTMLInputElement::default_step() not implemented for input type {}", type());
     return 0;
 }
@@ -2017,6 +2029,10 @@ double HTMLInputElement::step_scale_factor() const
     // https://html.spec.whatwg.org/multipage/input.html#range-state-(type=range):concept-input-step-scale
     if (type_state() == TypeAttributeState::Range)
         return 1;
+
+    // https://html.spec.whatwg.org/multipage/input.html#time-state-(type=time):concept-input-step-scale
+    if (type_state() == TypeAttributeState::Time)
+        return 1000;
 
     dbgln("HTMLInputElement::step_scale_factor() not implemented for input type {}", type());
     return 0;
@@ -2193,11 +2209,11 @@ WebIDL::ExceptionOr<void> HTMLInputElement::step_up_or_down(bool is_down, WebIDL
     // 7. If value subtracted from the step base is not an integral multiple of the allowed value step, then set value to the nearest value that,
     // when subtracted from the step base, is an integral multiple of the allowed value step, and that is less than value if the method invoked was the stepDown() method, and more than value otherwise.
     if (fmod(step_base() - value, allowed_value_step) != 0) {
-        double diff = step_base() - value;
+        double diff = abs(step_base() - value);
         if (is_down) {
-            value = diff - fmod(diff, allowed_value_step);
+            value = value - fmod(diff, allowed_value_step);
         } else {
-            value = diff + fmod(diff, allowed_value_step);
+            value = value + allowed_value_step - fmod(diff, allowed_value_step);
         }
     } else {
         // 1. Let n be the argument.
