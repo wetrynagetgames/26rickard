@@ -499,5 +499,10 @@
     "pre",
     "pre-line",
     "pre-wrap"
+  ],
+  "writing-mode": [
+      "horizontal-tb",
+      "vertical-lr",
+      "vertical-rl"
   ]
 }

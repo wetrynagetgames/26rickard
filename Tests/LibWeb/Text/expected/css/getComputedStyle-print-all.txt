@@ -46,6 +46,7 @@ visibility: visible
 white-space: normal
 word-spacing: normal
 word-wrap: normal
+writing-mode: horizontal-tb
 align-content: normal
 align-items: normal
 align-self: auto
