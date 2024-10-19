@@ -20,6 +20,7 @@
 #include <LibWeb/Fetch/Request.h>
 #include <LibWeb/Fetch/Response.h>
 #include <LibWeb/HTML/Scripting/TemporaryExecutionContext.h>
+#include <LibWeb/Streams/AbstractOperations.h>
 #include <LibWeb/WebIDL/ExceptionOr.h>
 #include <LibWeb/WebIDL/Promise.h>
 
@@ -164,8 +165,8 @@ void abort_fetch(JS::Realm& realm, WebIDL::Promise const& promise, JS::NonnullGC
 
     // 2. If request’s body is non-null and is readable, then cancel request’s body with error.
     if (auto* body = request->body().get_pointer<JS::NonnullGCPtr<Infrastructure::Body>>(); body != nullptr && (*body)->stream()->is_readable()) {
-        // TODO: Implement cancelling streams
-        (void)error;
+        // NOTE: Cancel here is different than the cancel method of stream and refers to https://streams.spec.whatwg.org/#readablestream-cancel
+        Streams::readable_stream_cancel((*body)->stream(), error);
     }
 
     // 3. If responseObject is null, then return.
@@ -179,8 +180,7 @@ void abort_fetch(JS::Realm& realm, WebIDL::Promise const& promise, JS::NonnullGC
     if (response->body()) {
         auto stream = response->body()->stream();
         if (stream->is_readable()) {
-            // TODO: Implement erroring streams
-            (void)error;
+            stream->error(error);
         }
     }
 }
