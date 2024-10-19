@@ -81,7 +81,7 @@ JS::NonnullGCPtr<JS::Promise> fetch(JS::VM& vm, RequestInfo const& input, Reques
 
     // 12. Set controller to the result of calling fetch given request and processResponse given response being these
     //     steps:
-    auto process_response = [locally_aborted, promise_capability, request, response_object, &relevant_realm](JS::NonnullGCPtr<Infrastructure::Response> response) mutable {
+    auto process_response = [locally_aborted, promise_capability, request, response_object, &relevant_realm, &controller](JS::NonnullGCPtr<Infrastructure::Response> response) mutable {
         // 1. If locallyAborted is true, then abort these steps.
         if (locally_aborted->value())
             return;
@@ -91,9 +91,9 @@ JS::NonnullGCPtr<JS::Promise> fetch(JS::VM& vm, RequestInfo const& input, Reques
 
         // 2. If response’s aborted flag is set, then:
         if (response->aborted()) {
-            // FIXME: 1. Let deserializedError be the result of deserialize a serialized abort reason given controller’s
-            //           serialized abort reason and relevantRealm.
-            auto deserialized_error = JS::js_undefined();
+            // 1. Let deserializedError be the result of deserialize a serialized abort reason given controller’s
+            //    serialized abort reason and relevantRealm.
+            auto deserialized_error = controller->deserialize_a_serialized_abort_reason(relevant_realm);
 
             // 2. Abort the fetch() call with p, request, responseObject, and deserializedError.
             abort_fetch(relevant_realm, promise_capability, request, response_object, deserialized_error);
