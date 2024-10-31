@@ -386,6 +386,7 @@ class ClassicScript;
 class CloseEvent;
 class CloseWatcher;
 class CloseWatcherManager;
+class ConstraintValidation;
 class CustomElementDefinition;
 class CustomElementRegistry;
 class DataTransfer;

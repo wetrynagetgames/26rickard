@@ -299,6 +299,7 @@ set(SOURCES
     HTML/DecodedImageData.cpp
     HTML/DedicatedWorkerGlobalScope.cpp
     HTML/DocumentState.cpp
+    HTML/ConstraintValidation.cpp
     HTML/DOMParser.cpp
     HTML/DOMStringList.cpp
     HTML/DOMStringMap.cpp
