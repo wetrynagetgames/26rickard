@@ -463,7 +463,7 @@ ErrorOr<void> initialize_main_thread_vm(HTML::EventLoop::Type type)
         // 10. If the previous step threw an exception, then:
         if (url.is_exception()) {
             // 1. Let completion be Completion Record { [[Type]]: throw, [[Value]]: resolutionError, [[Target]]: empty }.
-            auto completion = dom_exception_to_throw_completion(main_thread_vm(), url.exception());
+            auto completion = exception_to_throw_completion(main_thread_vm(), url.exception());
 
             // 2. Perform FinishLoadingImportedModule(referrer, moduleRequest, payload, completion).
             HTML::TemporaryExecutionContext context { *module_map_realm };
