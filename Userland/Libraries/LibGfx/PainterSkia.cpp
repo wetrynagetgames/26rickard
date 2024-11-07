@@ -85,6 +85,70 @@ static constexpr SkColor to_skia_color(Gfx::Color const& color)
     return SkColorSetARGB(color.alpha(), color.red(), color.green(), color.blue());
 }
 
+static constexpr SkBlendMode to_skia_blend_mode(Gfx::BlendMode blend_mode) {
+    switch (blend_mode) {
+    case BlendMode::Clear:
+        return SkBlendMode::kClear;
+    case BlendMode::Src:
+        return SkBlendMode::kSrc;
+    case BlendMode::Dst:
+        return SkBlendMode::kDst;
+    case BlendMode::SrcOver:
+        return SkBlendMode::kSrcOver;
+    case BlendMode::DstOver:
+        return SkBlendMode::kDstOver;
+    case BlendMode::SrcIn:
+        return SkBlendMode::kSrcIn;
+    case BlendMode::DstIn:
+        return SkBlendMode::kDstIn;
+    case BlendMode::SrcOut:
+        return SkBlendMode::kSrcOut;
+    case BlendMode::DstOut:
+        return SkBlendMode::kDstOut;
+    case BlendMode::SrcATop:
+        return SkBlendMode::kSrcATop;
+    case BlendMode::DstATop:
+        return SkBlendMode::kDstATop;
+    case BlendMode::Xor:
+        return SkBlendMode::kXor;
+    case BlendMode::Plus:
+        return SkBlendMode::kPlus;
+    case BlendMode::Modulate:
+        return SkBlendMode::kModulate;
+    case BlendMode::Screen:
+        return SkBlendMode::kScreen;
+    case BlendMode::Overlay:
+        return SkBlendMode::kOverlay;
+    case BlendMode::Darken:
+        return SkBlendMode::kDarken;
+    case BlendMode::Lighten:
+        return SkBlendMode::kLighten;
+    case BlendMode::ColorDodge:
+        return SkBlendMode::kColorDodge;
+    case BlendMode::ColorBurn:
+        return SkBlendMode::kColorBurn;
+    case BlendMode::HardLight:
+        return SkBlendMode::kHardLight;
+    case BlendMode::SoftLight:
+        return SkBlendMode::kSoftLight;
+    case BlendMode::Difference:
+        return SkBlendMode::kDifference;
+    case BlendMode::Exclusion:
+        return SkBlendMode::kExclusion;
+    case BlendMode::Multiply:
+        return SkBlendMode::kMultiply;
+    case BlendMode::Hue:
+        return SkBlendMode::kHue;
+    case BlendMode::Saturation:
+        return SkBlendMode::kSaturation;
+    case BlendMode::Color:
+        return SkBlendMode::kColor;
+    case BlendMode::Luminosity:
+        return SkBlendMode::kLuminosity;
+    }
+    VERIFY_NOT_REACHED();
+}
+
 static SkPath to_skia_path(Gfx::Path const& path)
 {
     return static_cast<PathImplSkia const&>(path.impl()).sk_path();
@@ -108,21 +172,6 @@ PainterSkia::PainterSkia(NonnullRefPtr<Gfx::Bitmap> target_bitmap)
 
 PainterSkia::~PainterSkia() = default;
 
-void PainterSkia::clear_rect(Gfx::FloatRect const& rect, Gfx::Color color)
-{
-    SkPaint paint;
-    paint.setColor(to_skia_color(color));
-    paint.setBlendMode(SkBlendMode::kClear);
-    impl().canvas()->drawRect(to_skia_rect(rect), paint);
-}
-
-void PainterSkia::fill_rect(Gfx::FloatRect const& rect, Color color)
-{
-    SkPaint paint;
-    paint.setColor(to_skia_color(color));
-    impl().canvas()->drawRect(to_skia_rect(rect), paint);
-}
-
 static SkSamplingOptions to_skia_sampling_options(Gfx::ScalingMode scaling_mode)
 {
     switch (scaling_mode) {
@@ -138,23 +187,6 @@ static SkSamplingOptions to_skia_sampling_options(Gfx::ScalingMode scaling_mode)
     }
 }
 
-void PainterSkia::draw_bitmap(Gfx::FloatRect const& dst_rect, Gfx::Bitmap const& src_bitmap, Gfx::IntRect const& src_rect, Gfx::ScalingMode scaling_mode, float global_alpha)
-{
-    SkBitmap sk_bitmap;
-    SkImageInfo info = SkImageInfo::Make(src_bitmap.width(), src_bitmap.height(), to_skia_color_type(src_bitmap.format()), to_skia_alpha_type(src_bitmap.alpha_type()));
-    sk_bitmap.installPixels(info, const_cast<void*>(static_cast<void const*>(src_bitmap.scanline(0))), src_bitmap.pitch());
-
-    SkPaint paint;
-    paint.setAlpha(static_cast<u8>(global_alpha * 255));
-
-    impl().canvas()->drawImageRect(
-        sk_bitmap.asImage(),
-        to_skia_rect(src_rect),
-        to_skia_rect(dst_rect),
-        to_skia_sampling_options(scaling_mode),
-        &paint,
-        SkCanvas::kStrict_SrcRectConstraint);
-}
 
 void PainterSkia::set_transform(Gfx::AffineTransform const& transform)
 {
@@ -166,20 +198,6 @@ void PainterSkia::set_transform(Gfx::AffineTransform const& transform)
     impl().canvas()->setMatrix(matrix);
 }
 
-void PainterSkia::stroke_path(Gfx::Path const& path, Gfx::Color color, float thickness)
-{
-    // Skia treats zero thickness as a special case and will draw a hairline, while we want to draw nothing.
-    if (!thickness)
-        return;
-
-    SkPaint paint;
-    paint.setAntiAlias(true);
-    paint.setStyle(SkPaint::kStroke_Style);
-    paint.setStrokeWidth(thickness);
-    paint.setColor(to_skia_color(color));
-    auto sk_path = to_skia_path(path);
-    impl().canvas()->drawPath(sk_path, paint);
-}
 
 static SkPoint to_skia_point(auto const& point)
 {
@@ -244,38 +262,120 @@ static SkPaint to_skia_paint(Gfx::PaintStyle const& style, Gfx::FloatRect const&
     return {};
 }
 
-void PainterSkia::stroke_path(Gfx::Path const& path, Gfx::PaintStyle const& paint_style, float thickness, float global_alpha)
+static bool requires_clear_outside_source(Gfx::BlendMode global_composite_operation) {
+    switch (global_composite_operation) {
+    case Gfx::BlendMode::Src:
+    case Gfx::BlendMode::SrcIn:
+    case Gfx::BlendMode::DstIn:
+    case Gfx::BlendMode::SrcOut:
+    case Gfx::BlendMode::DstATop:
+        return true;
+    default:
+        return false;
+    }
+}
+
+static void clear_outside_source_if_needed_fill(SkPath const& source_path, SkCanvas& canvas, Gfx::BlendMode global_composite_operation) {
+    // NOTE: Some blending modes need to clear the area outside the source, skia does not do this on its own.
+    if (!requires_clear_outside_source(global_composite_operation))
+        return;
+
+    SkPaint paint;
+    const SkRect size_rect = SkRect::Make(canvas.getBaseLayerSize());
+    paint.setAntiAlias(true);
+    paint.setBlendMode(SkBlendMode::kClear);
+    canvas.save();
+    canvas.clipPath(source_path, SkClipOp::kDifference, true);
+    canvas.drawRect(size_rect, paint);
+    canvas.restore();
+}
+
+void PainterSkia::clear_rect(Gfx::FloatRect const& rect, Gfx::Color color)
+{
+    SkPaint paint;
+    paint.setColor(to_skia_color(color));
+    paint.setBlendMode(SkBlendMode::kClear);
+    impl().canvas()->drawRect(to_skia_rect(rect), paint);
+}
+
+void PainterSkia::draw_bitmap(Gfx::FloatRect const& dst_rect, Gfx::Bitmap const& src_bitmap, Gfx::IntRect const& src_rect, Gfx::ScalingMode scaling_mode, float global_alpha, Gfx::BlendMode global_composite_operation)
+{
+    auto skia_src_rect = to_skia_rect(src_rect);
+    clear_outside_source_if_needed_fill(SkPath::Rect(skia_src_rect), *impl().canvas(), global_composite_operation);
+
+    SkBitmap sk_bitmap;
+    SkImageInfo info = SkImageInfo::Make(src_bitmap.width(), src_bitmap.height(), to_skia_color_type(src_bitmap.format()), to_skia_alpha_type(src_bitmap.alpha_type()));
+    sk_bitmap.installPixels(info, const_cast<void*>(static_cast<void const*>(src_bitmap.scanline(0))), src_bitmap.pitch());
+
+    SkPaint paint;
+    paint.setAlpha(static_cast<u8>(global_alpha * 255));
+    paint.setBlendMode(to_skia_blend_mode(global_composite_operation));
+
+    impl().canvas()->drawImageRect(
+        sk_bitmap.asImage(),
+        skia_src_rect,
+        to_skia_rect(dst_rect),
+        to_skia_sampling_options(scaling_mode),
+        &paint,
+        SkCanvas::kStrict_SrcRectConstraint);
+}
+
+void PainterSkia::stroke_path(Gfx::Path const& path, Gfx::Color color, float thickness, Gfx::BlendMode blend_mode)
 {
     // Skia treats zero thickness as a special case and will draw a hairline, while we want to draw nothing.
     if (!thickness)
         return;
 
+    // FIXME: Some blending modes need to clear the region outside the drawn path, Skia doesn't do it on it's onw.
+    SkPaint paint;
+    paint.setAntiAlias(true);
+    paint.setStyle(SkPaint::kStroke_Style);
+    paint.setStrokeWidth(thickness);
+    paint.setColor(to_skia_color(color));
+    paint.setBlendMode(to_skia_blend_mode(blend_mode));
+    auto sk_path = to_skia_path(path);
+    impl().canvas()->drawPath(sk_path, paint);
+}
+void PainterSkia::stroke_path(Gfx::Path const& path, Gfx::PaintStyle const& paint_style, float thickness, float global_alpha, Gfx::BlendMode global_composite_operation)
+{
+    // Skia treats zero thickness as a special case and will draw a hairline, while we want to draw nothing.
+    if (!thickness)
+        return;
+
+    // FIXME: Some blending modes need to clear the region outside the drawn path, Skia doesn't do it on it's onw.
     auto sk_path = to_skia_path(path);
     auto paint = to_skia_paint(paint_style, path.bounding_box());
     paint.setAntiAlias(true);
     paint.setAlphaf(global_alpha);
+    paint.setBlendMode(to_skia_blend_mode(global_composite_operation));
     paint.setStyle(SkPaint::Style::kStroke_Style);
     paint.setStrokeWidth(thickness);
     impl().canvas()->drawPath(sk_path, paint);
 }
 
-void PainterSkia::fill_path(Gfx::Path const& path, Gfx::Color color, Gfx::WindingRule winding_rule)
+void PainterSkia::fill_path(Gfx::Path const& path, Gfx::Color color, Gfx::WindingRule winding_rule, Gfx::BlendMode global_composite_operation)
 {
+    auto sk_path = to_skia_path(path);
+    sk_path.setFillType(to_skia_path_fill_type(winding_rule));
+    clear_outside_source_if_needed_fill(sk_path, *impl().canvas(), global_composite_operation);
+
     SkPaint paint;
     paint.setAntiAlias(true);
     paint.setColor(to_skia_color(color));
-    auto sk_path = to_skia_path(path);
-    sk_path.setFillType(to_skia_path_fill_type(winding_rule));
+    paint.setBlendMode(to_skia_blend_mode(global_composite_operation));
     impl().canvas()->drawPath(sk_path, paint);
 }
 
-void PainterSkia::fill_path(Gfx::Path const& path, Gfx::PaintStyle const& paint_style, float global_alpha, Gfx::WindingRule winding_rule)
+void PainterSkia::fill_path(Gfx::Path const& path, Gfx::PaintStyle const& paint_style, float global_alpha, Gfx::BlendMode global_composite_operation, Gfx::WindingRule winding_rule)
 {
     auto sk_path = to_skia_path(path);
     sk_path.setFillType(to_skia_path_fill_type(winding_rule));
+    clear_outside_source_if_needed_fill(sk_path, *impl().canvas(), global_composite_operation);
+
     auto paint = to_skia_paint(paint_style, path.bounding_box());
     paint.setAntiAlias(true);
     paint.setAlphaf(global_alpha);
+    paint.setBlendMode(to_skia_blend_mode(global_composite_operation));
     impl().canvas()->drawPath(sk_path, paint);
 }
 
