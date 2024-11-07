@@ -12,7 +12,7 @@
 
 namespace Gfx {
 
-RefPtr<GlyphRun> shape_text(FloatPoint baseline_start, float letter_spacing, Utf8View string, Gfx::Font const& font, GlyphRun::TextType text_type)
+RefPtr<GlyphRun> shape_text(FloatPoint baseline_start, float letter_spacing, Utf8View string, Gfx::Font const& font, GlyphRun::TextType text_type, ShapeFeatures const& features)
 {
     hb_buffer_t* buffer = hb_buffer_create();
     ScopeGuard destroy_buffer = [&]() { hb_buffer_destroy(buffer); };
@@ -24,7 +24,7 @@ RefPtr<GlyphRun> shape_text(FloatPoint baseline_start, float letter_spacing, Utf
     Vector<hb_glyph_info_t> const input_glyph_info({ glyph_info, glyph_count });
 
     auto* hb_font = font.harfbuzz_font();
-    hb_shape(hb_font, buffer, nullptr, 0);
+    hb_shape(hb_font, buffer, features.is_empty() ? nullptr : (hb_feature_t const*)features.data(), features.size());
 
     glyph_info = hb_buffer_get_glyph_infos(buffer, &glyph_count);
     auto* positions = hb_buffer_get_glyph_positions(buffer, &glyph_count);
@@ -45,12 +45,14 @@ RefPtr<GlyphRun> shape_text(FloatPoint baseline_start, float letter_spacing, Utf
             point.translate_by(letter_spacing, 0);
     }
 
+    hb_buffer_reset(buffer);
+
     return adopt_ref(*new Gfx::GlyphRun(move(glyph_run), font, text_type, point.x()));
 }
 
-float measure_text_width(Utf8View const& string, Gfx::Font const& font)
+float measure_text_width(Utf8View const& string, Gfx::Font const& font, ShapeFeatures const& features)
 {
-    auto glyph_run = shape_text({}, 0, string, font, GlyphRun::TextType::Common);
+    auto glyph_run = shape_text({}, 0, string, font, GlyphRun::TextType::Common, features);
     return glyph_run->width();
 }
 
