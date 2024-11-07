@@ -508,9 +508,10 @@ set(SOURCES
     IndexedDB/Internal/Database.cpp
     IndexedDB/IDBCursor.cpp
     IndexedDB/IDBFactory.cpp
-    IndexedDB/IDBOpenDBRequest.cpp
     IndexedDB/IDBDatabase.cpp
     IndexedDB/IDBIndex.cpp
+    IndexedDB/IDBObjectStore.cpp
+    IndexedDB/IDBOpenDBRequest.cpp
     IndexedDB/IDBRequest.cpp
     IndexedDB/IDBVersionChangeEvent.cpp
     Internals/Inspector.cpp

@@ -571,6 +571,7 @@ class IDBCursor;
 class IDBDatabase;
 class IDBFactory;
 class IDBIndex;
+class IDBObjectStore;
 class IDBOpenDBRequest;
 class IDBRequest;
 class IDBVersionChangeEvent;
