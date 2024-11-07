@@ -62,7 +62,7 @@ WebIDL::ExceptionOr<JS::NonnullGCPtr<IDBOpenDBRequest>> IDBFactory::open(String 
         auto result = open_a_database_connection(realm, storage_key.value(), name, version, request);
 
         // 2. Queue a task to run these steps:
-        HTML::queue_a_task(HTML::Task::Source::DatabaseAccess, nullptr, nullptr, JS::create_heap_function(realm.heap(), [&realm, &request, result = move(result)]() mutable {
+        HTML::queue_a_task(HTML::Task::Source::DatabaseAccess, nullptr, nullptr, JS::create_heap_function(realm.heap(), [&realm, request, result = move(result)]() mutable {
             // 1. If result is an error, then:
             if (result.is_error()) {
                 // 1. Set request’s result to undefined.
