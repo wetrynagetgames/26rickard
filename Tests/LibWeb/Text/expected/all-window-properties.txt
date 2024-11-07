@@ -199,6 +199,7 @@ IDBCursor
 IDBDatabase
 IDBFactory
 IDBIndex
+IDBKeyRange
 IDBObjectStore
 IDBOpenDBRequest
 IDBRequest
