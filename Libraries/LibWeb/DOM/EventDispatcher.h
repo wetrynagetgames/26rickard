@@ -15,10 +15,11 @@ namespace Web::DOM {
 class EventDispatcher {
 public:
     static bool dispatch(JS::NonnullGCPtr<EventTarget>, Event&, bool legacy_target_override = false);
+    static bool dispatch(JS::NonnullGCPtr<EventTarget>, Event&, bool legacy_target_override, bool& legacy_output_did_listeners_throw);
 
 private:
-    static void invoke(Event::PathEntry&, Event&, Event::Phase);
-    static bool inner_invoke(Event&, Vector<JS::Handle<DOM::DOMEventListener>>&, Event::Phase, bool);
+    static void invoke(Event::PathEntry&, Event&, Event::Phase, bool& legacy_output_did_listeners_throw);
+    static bool inner_invoke(Event&, Vector<JS::Handle<DOM::DOMEventListener>>&, Event::Phase, bool, bool&);
 };
 
 }
