@@ -7,6 +7,7 @@
 #include <LibJS/Runtime/VM.h>
 #include <LibWeb/DOM/EventDispatcher.h>
 #include <LibWeb/HTML/EventNames.h>
+#include <LibWeb/IndexedDB/IDBDatabase.h>
 #include <LibWeb/IndexedDB/IDBRequest.h>
 #include <LibWeb/IndexedDB/IDBVersionChangeEvent.h>
 #include <LibWeb/IndexedDB/Internal/Algorithms.h>
@@ -139,6 +140,20 @@ bool fire_a_version_change_event(JS::Realm& realm, FlyString const& event_name, 
 
     // 8. Return legacyOutputDidListenersThrowFlag.
     return legacy_output_did_listeners_throw_flag;
+}
+
+void close_a_database_connection(IDBDatabase& connection, bool forced)
+{
+    // 1. Set connection’s close pending flag to true.
+    connection.set_close_pending(true);
+
+    // FIXME: 2. If the forced flag is true, then for each transaction created using connection run abort a transaction with transaction and newly created "AbortError" DOMException.
+    // FIXME: 3. Wait for all transactions created using connection to complete. Once they are complete, connection is closed.
+    connection.set_state(IDBDatabase::ConnectionState::Closed);
+
+    // 4. If the forced flag is true, then fire an event named close at connection.
+    if (forced)
+        connection.dispatch_event(DOM::Event::create(connection.realm(), HTML::EventNames::close));
 }
 
 }
