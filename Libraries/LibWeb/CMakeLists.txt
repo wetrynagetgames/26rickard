@@ -506,6 +506,7 @@ set(SOURCES
     Infra/Strings.cpp
     IndexedDB/Internal/Algorithms.cpp
     IndexedDB/Internal/Database.cpp
+    IndexedDB/IDBCursor.cpp
     IndexedDB/IDBFactory.cpp
     IndexedDB/IDBOpenDBRequest.cpp
     IndexedDB/IDBDatabase.cpp
