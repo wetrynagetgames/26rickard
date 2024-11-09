@@ -58,6 +58,7 @@ enum class StateAndProperties;
 namespace Web::Bindings {
 class Intrinsics;
 class OptionConstructor;
+class Serializable;
 
 enum class AudioContextLatencyCategory;
 enum class CanPlayTypeResult;
@@ -559,6 +560,10 @@ struct StructuredSerializeOptions;
 struct SyntheticRealmSettings;
 struct ToggleTaskTracker;
 struct TransferDataHolder;
+
+using SerializationRecord = Vector<u32>;
+using SerializationMemory = HashMap<JS::Handle<JS::Value>, u32>;
+using DeserializationMemory = JS::MarkedVector<JS::Value>;
 }
 
 namespace Web::HighResolutionTime {
