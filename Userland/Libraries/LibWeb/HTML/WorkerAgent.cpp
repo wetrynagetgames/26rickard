@@ -55,4 +55,9 @@ void WorkerAgent::visit_edges(Cell::Visitor& visitor)
     visitor.visit(m_outside_settings);
 }
 
+void WorkerAgent::terminate()
+{
+    m_worker_ipc->async_close_worker();
+}
+
 }
