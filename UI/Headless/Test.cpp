@@ -23,6 +23,7 @@
 #include <LibGfx/ImageFormats/PNGWriter.h>
 #include <LibURL/URL.h>
 #include <LibWeb/HTML/SelectedFile.h>
+#include <LibWeb/HTML/Window.h>
 #include <UI/Headless/Application.h>
 #include <UI/Headless/HeadlessWebView.h>
 #include <UI/Headless/Test.h>
