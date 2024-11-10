@@ -315,16 +315,18 @@ JS::NonnullGCPtr<WebIDL::Promise> readable_stream_pipe_to(ReadableStream& source
         WebIDL::resolve_promise(realm, promise, JS::js_undefined());
     });
 
-    auto success_steps = JS::create_heap_function(realm.heap(), [promise, &realm, writer](ByteBuffer) {
+    auto success_steps = JS::create_heap_function(realm.heap(), [promise, &realm, reader, writer](ByteBuffer) {
         // Make sure we close the acquired writer.
         WebIDL::resolve_promise(realm, writable_stream_default_writer_close(*writer), JS::js_undefined());
+        readable_stream_default_reader_release(*reader);
 
         WebIDL::resolve_promise(realm, promise, JS::js_undefined());
     });
 
-    auto failure_steps = JS::create_heap_function(realm.heap(), [promise, &realm, writer](JS::Value error) {
+    auto failure_steps = JS::create_heap_function(realm.heap(), [promise, &realm, reader, writer](JS::Value error) {
         // Make sure we close the acquired writer.
         WebIDL::resolve_promise(realm, writable_stream_default_writer_close(*writer), JS::js_undefined());
+        readable_stream_default_reader_release(*reader);
 
         WebIDL::reject_promise(realm, promise, error);
     });
@@ -421,7 +423,7 @@ public:
 
                 // 2. If cloneResult is an abrupt completion,
                 if (clone_result.is_exception()) {
-                    auto completion = Bindings::dom_exception_to_throw_completion(m_realm->vm(), clone_result.release_error());
+                    auto completion = Bindings::exception_to_throw_completion(m_realm->vm(), clone_result.release_error());
 
                     // 1. Perform ! ReadableStreamDefaultControllerError(branch1.[[controller]], cloneResult.[[Value]]).
                     readable_stream_default_controller_error(controller1, completion.value().value());
@@ -709,7 +711,7 @@ public:
     {
         // 1. Queue a microtask to perform the following steps:
         HTML::queue_a_microtask(nullptr, JS::create_heap_function(m_realm->heap(), [this, chunk]() mutable {
-            HTML::TemporaryExecutionContext execution_context { m_realm };
+            HTML::TemporaryExecutionContext execution_context { m_realm, HTML::TemporaryExecutionContext::CallbacksEnabled::Yes };
 
             auto controller1 = m_params->branch1->controller()->get<JS::NonnullGCPtr<ReadableByteStreamController>>();
             auto controller2 = m_params->branch2->controller()->get<JS::NonnullGCPtr<ReadableByteStreamController>>();
@@ -732,7 +734,7 @@ public:
 
                 // 2. If cloneResult is an abrupt completion,
                 if (clone_result.is_exception()) {
-                    auto completion = Bindings::dom_exception_to_throw_completion(m_realm->vm(), clone_result.release_error());
+                    auto completion = Bindings::exception_to_throw_completion(m_realm->vm(), clone_result.release_error());
 
                     // 1. Perform ! ReadableByteStreamControllerError(branch1.[[controller]], cloneResult.[[Value]]).
                     readable_byte_stream_controller_error(controller1, completion.value().value());
@@ -896,7 +898,7 @@ public:
 
                 // 2. If cloneResult is an abrupt completion,
                 if (clone_result.is_exception()) {
-                    auto completion = Bindings::dom_exception_to_throw_completion(m_realm->vm(), clone_result.release_error());
+                    auto completion = Bindings::exception_to_throw_completion(m_realm->vm(), clone_result.release_error());
 
                     // 1. Perform ! ReadableByteStreamControllerError(byobBranch.[[controller]], cloneResult.[[Value]]).
                     readable_byte_stream_controller_error(byob_controller, completion.value().value());
@@ -1849,7 +1851,7 @@ void readable_byte_stream_controller_pull_into(ReadableByteStreamController& con
     // 8. If bufferResult is an abrupt completion,
     if (buffer_result.is_exception()) {
         // 1. Perform readIntoRequest’s error steps, given bufferResult.[[Value]].
-        auto throw_completion = Bindings::dom_exception_to_throw_completion(vm, buffer_result.exception());
+        auto throw_completion = Bindings::exception_to_throw_completion(vm, buffer_result.exception());
         read_into_request.on_error(*throw_completion.release_value());
 
         // 2. Return.
@@ -4809,7 +4811,7 @@ void set_up_transform_stream_default_controller_from_transformer(TransformStream
 
         // 2. If result is an abrupt completion, return a promise rejected with result.[[Value]].
         if (result.is_error()) {
-            auto throw_completion = Bindings::dom_exception_to_throw_completion(vm, result.exception());
+            auto throw_completion = Bindings::exception_to_throw_completion(vm, result.exception());
             return WebIDL::create_rejected_promise(realm, *throw_completion.release_value());
         }
 
@@ -4897,7 +4899,7 @@ WebIDL::ExceptionOr<void> transform_stream_default_controller_enqueue(TransformS
 
     // 5. If enqueueResult is an abrupt completion,
     if (enqueue_result.is_error()) {
-        auto throw_completion = Bindings::dom_exception_to_throw_completion(vm, enqueue_result.exception());
+        auto throw_completion = Bindings::exception_to_throw_completion(vm, enqueue_result.exception());
 
         // 1. Perform ! TransformStreamErrorWritableAndUnblockWrite(stream, enqueueResult.[[Value]]).
         transform_stream_error_writable_and_unblock_write(*stream, throw_completion.value().value());
