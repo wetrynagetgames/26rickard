@@ -100,6 +100,33 @@ void StackingContext::paint_svg(PaintContext& context, PaintableBox const& paint
     if (phase != PaintPhase::Foreground)
         return;
 
+    auto opacity = paintable.computed_values().opacity();
+    if (opacity == 0.0f)
+        return;
+
+    DisplayListRecorderStateSaver saver(context.display_list_recorder());
+
+    auto to_device_pixels_scale = float(context.device_pixels_per_css_pixel());
+    Gfx::IntRect source_paintable_rect = context.enclosing_device_rect(paintable.absolute_paint_rect()).to_type<int>();
+
+    auto transform_matrix = paintable.transform();
+    Gfx::FloatPoint transform_origin = paintable.transform_origin().to_type<float>();
+
+    DisplayListRecorder::PushStackingContextParams push_stacking_context_params {
+        .opacity = opacity,
+        .filter = paintable.computed_values().filter(),
+        .is_fixed_position = paintable.is_fixed_position(),
+        .source_paintable_rect = source_paintable_rect,
+        .transform = {
+            .origin = transform_origin.scaled(to_device_pixels_scale),
+            .matrix = transform_matrix,
+            // FIXME: this is resulting in a compile error in which this method
+            // is not being found
+            // .matrix = matrix_with_scaled_translation(transform_matrix, to_device_pixels_scale),
+        },
+    };
+    context.display_list_recorder().push_stacking_context(push_stacking_context_params);
+
     paintable.apply_clip_overflow_rect(context, PaintPhase::Foreground);
     paint_node(paintable, context, PaintPhase::Background);
     paint_node(paintable, context, PaintPhase::Border);
