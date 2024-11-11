@@ -481,4 +481,165 @@ int CSSStyleValue::to_font_width() const
     return width;
 }
 
+Gfx::FontVariantAlternates CSSStyleValue::to_font_variant_alternates() const
+{
+    VERIFY(is_keyword());
+    switch (as_keyword().keyword()) {
+    case Keyword::Normal:
+        return Gfx::FontVariantAlternates { .normal = true };
+    case Keyword::HistoricalForms:
+        return Gfx::FontVariantAlternates { .historical_forms = true };
+    default:
+        VERIFY_NOT_REACHED();
+    }
+}
+
+Optional<FontVariantCaps> CSSStyleValue::to_font_variant_caps() const
+{
+    VERIFY(is_keyword());
+    return keyword_to_font_variant_caps(as_keyword().keyword());
+}
+
+Gfx::FontVariantEastAsian CSSStyleValue::to_font_variant_east_asian() const
+{
+    VERIFY(is_value_list());
+    auto& list = as_value_list();
+    Gfx::FontVariantEastAsian east_asian {};
+    for (auto& value : list.values()) {
+        VERIFY(value->is_keyword());
+        switch (value->as_keyword().keyword()) {
+        case Keyword::Normal:
+            east_asian.normal = true;
+            return east_asian;
+        case Keyword::Jis78:
+            east_asian.variant = Gfx::FontVariantEastAsian::Variant::Jis78;
+            break;
+        case Keyword::Jis83:
+            east_asian.variant = Gfx::FontVariantEastAsian::Variant::Jis83;
+            break;
+        case Keyword::Jis90:
+            east_asian.variant = Gfx::FontVariantEastAsian::Variant::Jis90;
+            break;
+        case Keyword::Jis04:
+            east_asian.variant = Gfx::FontVariantEastAsian::Variant::Jis04;
+            break;
+        case Keyword::Simplified:
+            east_asian.variant = Gfx::FontVariantEastAsian::Variant::Simplified;
+            break;
+        case Keyword::Traditional:
+            east_asian.variant = Gfx::FontVariantEastAsian::Variant::Traditional;
+            break;
+        case Keyword::FullWidth:
+            east_asian.width = Gfx::FontVariantEastAsian::Width::FullWidth;
+            break;
+        case Keyword::ProportionalWidth:
+            east_asian.width = Gfx::FontVariantEastAsian::Width::Proportional;
+            break;
+        case Keyword::Ruby:
+            east_asian.ruby = true;
+            break;
+        default:
+            VERIFY_NOT_REACHED();
+            break;
+        }
+    }
+    return east_asian;
+}
+
+Gfx::FontVariantLigatures CSSStyleValue::to_font_variant_ligatures() const
+{
+    VERIFY(is_value_list());
+    auto& list = as_value_list();
+    Gfx::FontVariantLigatures ligatures;
+
+    for (auto& value : list.values()) {
+        VERIFY(value->is_keyword());
+        switch (value->as_keyword().keyword()) {
+        case Keyword::Normal:
+            ligatures.normal = true;
+            return ligatures;
+        case Keyword::None:
+            ligatures.none = true;
+            return ligatures;
+        case Keyword::CommonLigatures:
+            ligatures.common = Gfx::FontVariantLigatures::Common::Common;
+            break;
+        case Keyword::NoCommonLigatures:
+            ligatures.common = Gfx::FontVariantLigatures::Common::NoCommon;
+            break;
+        case Keyword::DiscretionaryLigatures:
+            ligatures.discretionary = Gfx::FontVariantLigatures::Discretionary::Discretionary;
+            break;
+        case Keyword::NoDiscretionaryLigatures:
+            ligatures.discretionary = Gfx::FontVariantLigatures::Discretionary::NoDiscretionary;
+            break;
+        case Keyword::HistoricalLigatures:
+            ligatures.historical = Gfx::FontVariantLigatures::Historical::Historical;
+            break;
+        case Keyword::NoHistoricalLigatures:
+            ligatures.historical = Gfx::FontVariantLigatures::Historical::NoHistorical;
+            break;
+        case Keyword::Contextual:
+            ligatures.contextual = Gfx::FontVariantLigatures::Contextual::Contextual;
+            break;
+        case Keyword::NoContextual:
+            ligatures.contextual = Gfx::FontVariantLigatures::Contextual::NoContextual;
+            break;
+        default:
+            VERIFY_NOT_REACHED();
+            break;
+        }
+    }
+    return ligatures;
+}
+
+Gfx::FontVariantNumeric CSSStyleValue::to_font_variant_numeric() const
+{
+    VERIFY(is_value_list());
+    auto& list = as_value_list();
+    Gfx::FontVariantNumeric numeric {};
+    for (auto& value : list.values()) {
+        VERIFY(value->is_keyword());
+        switch (value->as_keyword().keyword()) {
+        case Keyword::Normal:
+            numeric.normal = true;
+            return numeric;
+        case Keyword::Ordinal:
+            numeric.ordinal = true;
+            break;
+        case Keyword::SlashedZero:
+            numeric.slashed_zero = true;
+            break;
+        case Keyword::OldstyleNums:
+            numeric.figure = Gfx::FontVariantNumeric::Figure::Oldstyle;
+            break;
+        case Keyword::LiningNums:
+            numeric.figure = Gfx::FontVariantNumeric::Figure::Lining;
+            break;
+        case Keyword::ProportionalNums:
+            numeric.spacing = Gfx::FontVariantNumeric::Spacing::Proportional;
+            break;
+        case Keyword::TabularNums:
+            numeric.spacing = Gfx::FontVariantNumeric::Spacing::Tabular;
+            break;
+        case Keyword::DiagonalFractions:
+            numeric.fraction = Gfx::FontVariantNumeric::Fraction::Diagonal;
+            break;
+        case Keyword::StackedFractions:
+            numeric.fraction = Gfx::FontVariantNumeric::Fraction::Stacked;
+            break;
+        default:
+            VERIFY_NOT_REACHED();
+            break;
+        }
+    }
+    return numeric;
+}
+
+Optional<FontVariantPosition> CSSStyleValue::to_font_variant_position() const
+{
+    VERIFY(is_keyword());
+    return keyword_to_font_variant_position(as_keyword().keyword());
+}
+
 }

@@ -30,6 +30,16 @@ struct DrawGlyph {
     }
 };
 
+/* ABI compatible with harfbuzz' hb_feature_t */
+typedef struct ShapeFeature {
+    u32 tag;
+    u32 value;
+    unsigned int start;
+    unsigned int end;
+} ShapeFeature;
+
+using ShapeFeatures = Vector<ShapeFeature, 4>;
+
 class GlyphRun : public RefCounted<GlyphRun> {
 public:
     enum class TextType {
