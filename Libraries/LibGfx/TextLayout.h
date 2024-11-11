@@ -30,12 +30,9 @@ struct DrawGlyph {
     }
 };
 
-/* ABI compatible with harfbuzz' hb_feature_t */
 typedef struct ShapeFeature {
-    u32 tag;
+    char tag[4];
     u32 value;
-    unsigned int start;
-    unsigned int end;
 } ShapeFeature;
 
 using ShapeFeatures = Vector<ShapeFeature, 4>;

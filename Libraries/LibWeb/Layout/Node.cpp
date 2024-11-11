@@ -458,10 +458,20 @@ void NodeWithStyle::apply_style(const CSS::StyleProperties& computed_style)
     if (auto box_sizing = computed_style.box_sizing(); box_sizing.has_value())
         computed_values.set_box_sizing(box_sizing.release_value());
 
-    if (auto maybe_font_variant = computed_style.font_variant(); maybe_font_variant.has_value())
-        computed_values.set_font_variant(maybe_font_variant.release_value());
     if (auto maybe_font_language_override = computed_style.font_language_override(); maybe_font_language_override.has_value())
         computed_values.set_font_language_override(maybe_font_language_override.release_value());
+    if (auto font_variant_alternates = computed_style.font_variant_alternates(); !font_variant_alternates.normal)
+        computed_values.set_font_variant_alternates(font_variant_alternates);
+    if (auto maybe_font_variant_caps = computed_style.font_variant_caps(); maybe_font_variant_caps.has_value())
+        computed_values.set_font_variant_caps(maybe_font_variant_caps.release_value());
+    if (auto font_variant_east_asian = computed_style.font_variant_east_asian(); !font_variant_east_asian.normal)
+        computed_values.set_font_variant_east_asian(font_variant_east_asian);
+    if (auto font_variant_ligatures = computed_style.font_variant_ligatures(); !font_variant_ligatures.normal)
+        computed_values.set_font_variant_ligatures(font_variant_ligatures);
+    if (auto font_variant_numeric = computed_style.font_variant_numeric(); !font_variant_numeric.normal)
+        computed_values.set_font_variant_numeric(font_variant_numeric);
+    if (auto maybe_font_variant_position = computed_style.font_variant_position(); maybe_font_variant_position.has_value())
+        computed_values.set_font_variant_position(maybe_font_variant_position.release_value());
     if (auto maybe_font_feature_settings = computed_style.font_feature_settings(); maybe_font_feature_settings.has_value())
         computed_values.set_font_feature_settings(maybe_font_feature_settings.release_value());
     if (auto maybe_font_variation_settings = computed_style.font_variation_settings(); maybe_font_variation_settings.has_value())

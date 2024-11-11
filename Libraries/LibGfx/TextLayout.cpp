@@ -24,7 +24,22 @@ RefPtr<GlyphRun> shape_text(FloatPoint baseline_start, float letter_spacing, Utf
     Vector<hb_glyph_info_t> const input_glyph_info({ glyph_info, glyph_count });
 
     auto* hb_font = font.harfbuzz_font();
-    hb_shape(hb_font, buffer, features.is_empty() ? nullptr : (hb_feature_t const*)features.data(), features.size());
+    const hb_feature_t* hb_features_data = nullptr;
+    Vector<hb_feature_t> hb_features;
+    if (!features.is_empty()) {
+        hb_features.ensure_capacity(features.size());
+        for (auto const& feature : features) {
+            hb_features.append({
+                .tag = HB_TAG(feature.tag[0], feature.tag[1], feature.tag[2], feature.tag[3]),
+                .value = feature.value,
+                .start = 0,
+                .end =  static_cast<unsigned int>(-1),
+            });
+        }
+        hb_features_data = hb_features.data();
+    }
+
+    hb_shape(hb_font, buffer, hb_features_data, features.size());
 
     glyph_info = hb_buffer_get_glyph_infos(buffer, &glyph_count);
     auto* positions = hb_buffer_get_glyph_positions(buffer, &glyph_count);
