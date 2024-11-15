@@ -88,4 +88,73 @@ ErrorOr<void> ioctl(int, unsigned, ...)
     VERIFY_NOT_REACHED();
 }
 
+ErrorOr<void*> mmap(void*, size_t size, int protection, int flags, int fd, off_t offset, size_t alignment, StringView)
+{
+    // custom alignment is not supported
+    VERIFY(!alignment);
+    // address hint is not supported
+    VERIFY(!(flags & MAP_FIXED));
+    if (flags & ~(MAP_SHARED | MAP_PRIVATE | MAP_ANONYMOUS))
+        dbgln("mmap: unrecognized flags {}", flags);
+
+    int map_protection = 0, view_protection = 0;
+    switch (protection) {
+    case PROT_READ:
+        map_protection = PAGE_READONLY;
+        view_protection = FILE_MAP_READ;
+        break;
+    case PROT_READ | PROT_WRITE:
+        map_protection = PAGE_READWRITE;
+        view_protection = FILE_MAP_WRITE;
+        break;
+    default:
+        VERIFY_NOT_REACHED();
+    }
+
+    HANDLE file_handle = INVALID_HANDLE_VALUE;
+    // Anonymous mapping returned by this function is effectively always private because
+    // the only way to share it is via the handle, which is immediately closed after MapViewOfFile.
+    // Hence:
+    // * shared anonymous is not supported
+    // * private anonymous does not need to use copy-on-write
+    if (flags & MAP_ANONYMOUS) {
+        VERIFY(fd == -1 && offset == 0);
+        VERIFY(!(flags & MAP_SHARED));
+    } else {
+        if (flags & MAP_PRIVATE)
+            view_protection = FILE_MAP_COPY; // copy-on-write
+        file_handle = (HANDLE)_get_osfhandle(fd);
+        if (file_handle == INVALID_HANDLE_VALUE)
+            return Error::from_errno(errno);
+    }
+
+    // double shift is to support 32-bit size
+    HANDLE map_handle = CreateFileMapping(file_handle, NULL, map_protection, size >> 31 >> 1, size & 0xFFFFFFFF, NULL);
+    if (!map_handle)
+        return Error::from_windows_error(GetLastError());
+
+    // NOTE: offset must be a multiple of the allocation granularity
+    VERIFY(offset >= 0);
+    void* ptr = MapViewOfFile(map_handle, view_protection, offset >> 31 >> 1, offset & 0xFFFFFFFF, 0);
+    auto error = GetLastError();
+
+    // It is OK to close map_handle here because
+    // "Mapped views of a file mapping object maintain internal references to the object,
+    // and a file mapping object does not close until all references to it are released."
+    // https://learn.microsoft.com/en-us/windows/win32/api/winbase/nf-winbase-createfilemappinga
+    CloseHandle(map_handle);
+
+    if (!ptr)
+        return Error::from_windows_error(error);
+
+    return ptr;
+}
+
+ErrorOr<void> munmap(void* address, size_t)
+{
+    if (!UnmapViewOfFile(address))
+        return Error::from_windows_error(GetLastError());
+    return {};
+}
+
 }

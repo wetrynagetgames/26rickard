@@ -24,6 +24,7 @@
 #    include <pwd.h>
 #    include <spawn.h>
 #    include <sys/ioctl.h>
+#    include <sys/mman.h>
 #    include <sys/resource.h>
 #    include <sys/socket.h>
 #    include <sys/time.h>
@@ -33,6 +34,12 @@
 #    include <utime.h>
 #else
 #    define O_CLOEXEC O_NOINHERIT
+#    define PROT_READ 0x1
+#    define PROT_WRITE 0x2
+#    define MAP_SHARED 0x01
+#    define MAP_PRIVATE 0x02
+#    define MAP_FIXED 0x10
+#    define MAP_ANONYMOUS 0x20
 using sighandler_t = void (*)(int);
 using socklen_t = int;
 #endif
