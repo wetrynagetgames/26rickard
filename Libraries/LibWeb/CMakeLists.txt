@@ -506,10 +506,15 @@ set(SOURCES
     Infra/Strings.cpp
     IndexedDB/Internal/Algorithms.cpp
     IndexedDB/Internal/Database.cpp
-    IndexedDB/IDBFactory.cpp
-    IndexedDB/IDBOpenDBRequest.cpp
+    IndexedDB/IDBCursor.cpp
     IndexedDB/IDBDatabase.cpp
+    IndexedDB/IDBFactory.cpp
+    IndexedDB/IDBIndex.cpp
+    IndexedDB/IDBKeyRange.cpp
+    IndexedDB/IDBObjectStore.cpp
+    IndexedDB/IDBOpenDBRequest.cpp
     IndexedDB/IDBRequest.cpp
+    IndexedDB/IDBTransaction.cpp
     IndexedDB/IDBVersionChangeEvent.cpp
     Internals/Inspector.cpp
     Internals/InternalAnimationTimeline.cpp

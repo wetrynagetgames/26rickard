@@ -31,7 +31,7 @@
 namespace Web::DOM {
 
 // https://dom.spec.whatwg.org/#concept-event-listener-inner-invoke
-bool EventDispatcher::inner_invoke(Event& event, Vector<JS::Handle<DOM::DOMEventListener>>& listeners, Event::Phase phase, bool invocation_target_in_shadow_tree)
+bool EventDispatcher::inner_invoke(Event& event, Vector<JS::Handle<DOM::DOMEventListener>>& listeners, Event::Phase phase, bool invocation_target_in_shadow_tree, bool& legacy_output_did_listeners_throw)
 {
     // 1. Let found be false.
     bool found = false;
@@ -97,7 +97,8 @@ bool EventDispatcher::inner_invoke(Event& event, Vector<JS::Handle<DOM::DOMEvent
             VERIFY(window_or_worker);
             window_or_worker->report_an_exception(*result.release_error().value());
 
-            // FIXME: 2. Set legacyOutputDidListenersThrowFlag if given. (Only used by IndexedDB currently)
+            // 2. Set legacyOutputDidListenersThrowFlag if given. (Only used by IndexedDB currently)
+            legacy_output_did_listeners_throw = true;
         }
 
         // 11. Unset event’s in passive listener flag.
@@ -119,7 +120,7 @@ bool EventDispatcher::inner_invoke(Event& event, Vector<JS::Handle<DOM::DOMEvent
 }
 
 // https://dom.spec.whatwg.org/#concept-event-listener-invoke
-void EventDispatcher::invoke(Event::PathEntry& struct_, Event& event, Event::Phase phase)
+void EventDispatcher::invoke(Event::PathEntry& struct_, Event& event, Event::Phase phase, bool& legacy_output_did_listeners_throw)
 {
     auto last_valid_shadow_adjusted_target = event.path().last_matching([&struct_](auto& entry) {
         return entry.index <= struct_.index && entry.shadow_adjusted_target;
@@ -152,7 +153,7 @@ void EventDispatcher::invoke(Event::PathEntry& struct_, Event& event, Event::Pha
     bool invocation_target_in_shadow_tree = struct_.invocation_target_in_shadow_tree;
 
     // 8. Let found be the result of running inner invoke with event, listeners, phase, invocationTargetInShadowTree, and legacyOutputDidListenersThrowFlag if given.
-    bool found = inner_invoke(event, listeners, phase, invocation_target_in_shadow_tree);
+    bool found = inner_invoke(event, listeners, phase, invocation_target_in_shadow_tree, legacy_output_did_listeners_throw);
 
     // 9. If found is false and event’s isTrusted attribute is true, then:
     if (!found && event.is_trusted()) {
@@ -173,15 +174,21 @@ void EventDispatcher::invoke(Event::PathEntry& struct_, Event& event, Event::Pha
             return;
 
         // 3. Inner invoke with event, listeners, phase, invocationTargetInShadowTree, and legacyOutputDidListenersThrowFlag if given.
-        inner_invoke(event, listeners, phase, invocation_target_in_shadow_tree);
+        inner_invoke(event, listeners, phase, invocation_target_in_shadow_tree, legacy_output_did_listeners_throw);
 
         // 4. Set event’s type attribute value to originalEventType.
         event.set_type(original_event_type);
     }
 }
 
-// https://dom.spec.whatwg.org/#concept-event-dispatch
 bool EventDispatcher::dispatch(JS::NonnullGCPtr<EventTarget> target, Event& event, bool legacy_target_override)
+{
+    bool legacy_output_did_listeners_throw = false;
+    return dispatch(target, event, legacy_target_override, legacy_output_did_listeners_throw);
+}
+
+// https://dom.spec.whatwg.org/#concept-event-dispatch
+bool EventDispatcher::dispatch(JS::NonnullGCPtr<EventTarget> target, Event& event, bool legacy_target_override, bool& legacy_output_did_listeners_throw)
 {
     // 1. Set event’s dispatch flag.
     event.set_dispatched(true);
@@ -349,7 +356,7 @@ bool EventDispatcher::dispatch(JS::NonnullGCPtr<EventTarget> target, Event& even
                 event.set_phase(Event::Phase::CapturingPhase);
 
             // 3. Invoke with struct, event, "capturing", and legacyOutputDidListenersThrowFlag if given.
-            invoke(entry, event, Event::Phase::CapturingPhase);
+            invoke(entry, event, Event::Phase::CapturingPhase, legacy_output_did_listeners_throw);
         }
 
         // 14. For each struct in event’s path:
@@ -369,7 +376,7 @@ bool EventDispatcher::dispatch(JS::NonnullGCPtr<EventTarget> target, Event& even
             }
 
             // 3. Invoke with struct, event, "bubbling", and legacyOutputDidListenersThrowFlag if given.
-            invoke(entry, event, Event::Phase::BubblingPhase);
+            invoke(entry, event, Event::Phase::BubblingPhase, legacy_output_did_listeners_throw);
         }
     }
 

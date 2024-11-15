@@ -196,10 +196,15 @@ HTMLVideoElement
 HashChangeEvent
 Headers
 History
+IDBCursor
 IDBDatabase
 IDBFactory
+IDBIndex
+IDBKeyRange
+IDBObjectStore
 IDBOpenDBRequest
 IDBRequest
+IDBTransaction
 IDBVersionChangeEvent
 IdleDeadline
 Image
