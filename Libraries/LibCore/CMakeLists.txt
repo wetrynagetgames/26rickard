@@ -110,3 +110,8 @@ endif()
 if (ANDROID)
     target_link_libraries(LibCore PRIVATE log)
 endif()
+
+if (WIN32)
+    find_path(PTHREAD_INCLUDE_DIR pthread.h REQUIRED)
+    target_include_directories(LibCore PRIVATE ${PTHREAD_INCLUDE_DIR})
+endif()
