@@ -2267,13 +2267,31 @@ ErrorOr<String> Node::name_or_description(NameOrDescription target, Document con
                 total_accumulated_text.append(result);
             }
             // iii. Return the accumulated text.
+            // AD-HOC: This substep in the spec doesn’t seem to explicitly require the following check for an aria-label
+            // value; but the “button's hidden referenced name (visibility:hidden) with hidden aria-labelledby traversal
+            // falls back to aria-label” subtest at https://wpt.fyi/results/accname/name/comp_labelledby.html won’t pass
+            // unless we do this check.
+            if (total_accumulated_text.to_string().value().bytes_as_string_view().is_whitespace() && target == NameOrDescription::Name && element->aria_label().has_value() && !element->aria_label()->is_empty() && !element->aria_label()->bytes_as_string_view().is_whitespace())
+                return element->aria_label().value();
             return total_accumulated_text.to_string();
         }
-        // C. Embedded Control: Otherwise, if the current node is a control embedded
-        // within the label (e.g. any element directly referenced by aria-labelledby) for
-        // another widget, where the user can adjust the embedded control's value, then
-        // return the embedded control as part of the text alternative in the following
-        // manner:
+
+        // D. AriaLabel: Otherwise, if the current node has an aria-label attribute whose value is not undefined, not
+        // the empty string, nor, when trimmed of whitespace, is not the empty string:
+        // AD-HOC: We’ve reordered substeps C and D from https://w3c.github.io/accname/#step2 — because
+        // the more-specific per-HTML-element requirements at https://w3c.github.io/html-aam/#accname-computation
+        // necessitate doing so, and the “input with label for association is superceded by aria-label” subtest at
+        // https://wpt.fyi/results/accname/name/comp_label.html won’t pass unless we do this reordering.
+        // Spec PR: https://github.com/w3c/aria/pull/2377
+        if (target == NameOrDescription::Name && element->aria_label().has_value() && !element->aria_label()->is_empty() && !element->aria_label()->bytes_as_string_view().is_whitespace()) {
+            // TODO: - If traversal of the current node is due to recursion and the current node is an embedded control as defined in step 2E, ignore aria-label and skip to rule 2E.
+            // - Otherwise, return the value of aria-label.
+            return element->aria_label().value();
+        }
+
+        // C. Embedded Control: Otherwise, if the current node is a control embedded within the label (e.g. any element
+        // directly referenced by aria-labelledby) for another widget, where the user can adjust the embedded control's
+        // value, then return the embedded control as part of the text alternative in the following manner:
         GC::Ptr<DOM::NodeList> labels;
         if (is<HTML::HTMLElement>(this))
             labels = (const_cast<HTML::HTMLElement&>(static_cast<HTML::HTMLElement const&>(*current_node))).labels();
@@ -2341,15 +2359,6 @@ ErrorOr<String> Node::name_or_description(NameOrDescription target, Document con
                 }
             }
             return builder.to_string();
-        }
-
-        // D. AriaLabel: Otherwise, if the current node has an aria-label attribute whose
-        // value is not undefined, not the empty string, nor, when trimmed of whitespace,
-        // is not the empty string:
-        if (target == NameOrDescription::Name && element->aria_label().has_value() && !element->aria_label()->is_empty() && !element->aria_label()->bytes_as_string_view().is_whitespace()) {
-            // TODO: - If traversal of the current node is due to recursion and the current node is an embedded control as defined in step 2E, ignore aria-label and skip to rule 2E.
-            // - Otherwise, return the value of aria-label.
-            return element->aria_label().value();
         }
 
         // E. Host Language Label: Otherwise, if the current node's native markup provides an attribute (e.g. alt) or
