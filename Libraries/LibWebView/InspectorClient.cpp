@@ -610,9 +610,7 @@ String InspectorClient::generate_dom_tree(JsonObject const& dom_tree)
             comment = escape_html_entities(comment);
 
             builder.appendff("<span class=\"hoverable comment\" {}>", data_attributes.string_view());
-            builder.append("<span>&lt;!--</span>"sv);
-            builder.appendff("<span data-node-type=\"comment\" class=\"editable\">{}</span>", comment);
-            builder.append("<span>--&gt;</span>"sv);
+            builder.appendff("<span data-node-type=\"comment\" class=\"editable\" title=\"comment\">{}</span>", comment);
             builder.append("</span>"sv);
             return;
         }
@@ -639,7 +637,6 @@ String InspectorClient::generate_dom_tree(JsonObject const& dom_tree)
         auto tag = name.to_lowercase();
 
         builder.appendff("<span class=\"hoverable\" {}>", data_attributes.string_view());
-        builder.append("<span>&lt;</span>"sv);
         builder.appendff("<span data-node-type=\"tag\" data-tag=\"{0}\" class=\"editable tag\">{0}</span>", tag);
 
         if (auto attributes = node.get_object("attributes"sv); attributes.has_value()) {
@@ -658,7 +655,6 @@ String InspectorClient::generate_dom_tree(JsonObject const& dom_tree)
             });
         }
 
-        builder.append("<span>&gt;</span>"sv);
         builder.append("</span>"sv);
     });
 
