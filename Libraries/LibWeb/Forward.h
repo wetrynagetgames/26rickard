@@ -93,6 +93,18 @@ struct ParsedCookie;
 enum class Source;
 }
 
+namespace Web::CredentialManagement {
+struct CredentialRequestOptions;
+struct CredentialCreationOptions;
+// https://w3c.github.io/webappsec-credential-management/
+
+enum class CredentialMediationRequirement;
+
+class Credential;
+class CredentialsContainer;
+class FederatedCredential;
+}
+
 namespace Web::Crypto {
 class Crypto;
 class SubtleCrypto;
