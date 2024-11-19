@@ -11,10 +11,13 @@
 <body>
 <div id="content"></div>
 <script type="text/javascript">
+  window.onload = (event) => {
+    console.log('expectation onload', event.target.location.href);
+  }
   document.fonts.ready.then(() => {
-    internals.finishLoading();
+    console.log('exceptation document.fonts.ready');
   })
-  internals.disableAutomaticPageFinish();
+  // internals.disableAutomaticPageFinish();
   document.getElementById("content").appendChild(createFeatureTestTable(gPropertyData, "font-variant-numeric", true, false));
 </script>
 </body>

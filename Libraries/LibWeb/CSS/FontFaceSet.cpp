@@ -28,7 +28,7 @@ namespace Web::CSS {
 GC_DEFINE_ALLOCATOR(FontFaceSet);
 
 // https://drafts.csswg.org/css-font-loading/#dom-fontfaceset-fontfaceset
-GC::Ref<FontFaceSet> FontFaceSet::construct_impl(JS::Realm& realm, Vector<GC::Root<FontFace>> const& initial_faces)
+GC::Ref<FontFaceSet> FontFaceSet::construct_impl(Web::Page& page, JS::Realm& realm, Vector<GC::Root<FontFace>> const& initial_faces)
 {
     auto ready_promise = WebIDL::create_promise(realm);
     auto set_entries = JS::Set::create(realm);
@@ -37,16 +37,17 @@ GC::Ref<FontFaceSet> FontFaceSet::construct_impl(JS::Realm& realm, Vector<GC::Ro
     for (auto const& face : initial_faces)
         set_entries->set_add(face);
 
-    return realm.create<FontFaceSet>(realm, ready_promise, set_entries);
+    return realm.create<FontFaceSet>(page, realm, ready_promise, set_entries);
 }
 
-GC::Ref<FontFaceSet> FontFaceSet::create(JS::Realm& realm)
+GC::Ref<FontFaceSet> FontFaceSet::create(Web::Page& page, JS::Realm& realm)
 {
-    return construct_impl(realm, {});
+    return construct_impl(page, realm, {});
 }
 
-FontFaceSet::FontFaceSet(JS::Realm& realm, GC::Ref<WebIDL::Promise> ready_promise, GC::Ref<JS::Set> set_entries)
+FontFaceSet::FontFaceSet(Web::Page& page, JS::Realm& realm, GC::Ref<WebIDL::Promise> ready_promise, GC::Ref<JS::Set> set_entries)
     : DOM::EventTarget(realm)
+    , m_page(page)
     , m_set_entries(set_entries)
     , m_ready_promise(ready_promise)
     , m_status(Bindings::FontFaceSetLoadStatus::Loaded)
@@ -63,6 +64,7 @@ void FontFaceSet::initialize(JS::Realm& realm)
 void FontFaceSet::visit_edges(Cell::Visitor& visitor)
 {
     Base::visit_edges(visitor);
+    visitor.visit(m_page);
     visitor.visit(m_set_entries);
     visitor.visit(m_ready_promise);
     visitor.visit(m_loading_fonts);
@@ -290,6 +292,8 @@ GC::Ref<WebIDL::Promise> FontFaceSet::ready() const
 void FontFaceSet::resolve_ready_promise()
 {
     WebIDL::resolve_promise(realm(), m_ready_promise);
+
+    m_page->client().page_did_finish_loading_page_and_fonts(m_page->url());
 }
 
 }

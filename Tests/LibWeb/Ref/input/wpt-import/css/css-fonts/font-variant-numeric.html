@@ -14,10 +14,12 @@
 <body>
 <div id="content"></div>
 <script type="text/javascript">
+  window.onload = (event) => {
+    console.log('actual onload', event.target.location.href);
+  }
   document.fonts.ready.then(() => {
-    internals.finishLoading();
+    console.log('actual document.fonts.ready');
   })
-  internals.disableAutomaticPageFinish();
   document.getElementById("content").appendChild(createFeatureTestTable(gPropertyData, "font-variant-numeric", false, false));
 </script>
 </body>

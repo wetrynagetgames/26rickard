@@ -95,7 +95,7 @@ endpoint WebContentClient
     did_get_js_console_messages(u64 page_id, i32 start_index, Vector<ByteString> message_types, Vector<ByteString> messages) =|
 
     did_finish_text_test(u64 page_id, String text) =|
-
+    did_finish_loading_page_and_fonts(u64 page_id, URL::URL url) =|
     did_find_in_page(u64 page_id, size_t current_match_index, Optional<size_t> total_match_count) =|
 
     request_worker_agent(u64 page_id) => (IPC::File socket) // FIXME: Add required attributes to select a SharedWorker Agent

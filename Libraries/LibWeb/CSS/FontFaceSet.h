@@ -13,6 +13,8 @@
 #include <LibWeb/Bindings/PlatformObject.h>
 #include <LibWeb/CSS/FontFace.h>
 #include <LibWeb/DOM/EventTarget.h>
+#include <LibWeb/HTML/TraversableNavigable.h>
+#include <LibWeb/Page/Page.h>
 
 namespace Web::CSS {
 
@@ -21,8 +23,8 @@ class FontFaceSet final : public DOM::EventTarget {
     GC_DECLARE_ALLOCATOR(FontFaceSet);
 
 public:
-    [[nodiscard]] static GC::Ref<FontFaceSet> construct_impl(JS::Realm&, Vector<GC::Root<FontFace>> const& initial_faces);
-    [[nodiscard]] static GC::Ref<FontFaceSet> create(JS::Realm&);
+    [[nodiscard]] static GC::Ref<FontFaceSet> construct_impl(Web::Page&, JS::Realm&, Vector<GC::Root<FontFace>> const& initial_faces);
+    [[nodiscard]] static GC::Ref<FontFaceSet> create(Web::Page&, JS::Realm&);
     virtual ~FontFaceSet() override = default;
 
     GC::Ref<JS::Set> set_entries() const { return m_set_entries; }
@@ -46,11 +48,12 @@ public:
     void resolve_ready_promise();
 
 private:
-    FontFaceSet(JS::Realm&, GC::Ref<WebIDL::Promise> ready_promise, GC::Ref<JS::Set> set_entries);
+    FontFaceSet(Web::Page&, JS::Realm&, GC::Ref<WebIDL::Promise> ready_promise, GC::Ref<JS::Set> set_entries);
 
     virtual void initialize(JS::Realm&) override;
     virtual void visit_edges(Cell::Visitor&) override;
 
+    GC::Ref<Web::Page> m_page;
     GC::Ref<JS::Set> m_set_entries;
     GC::Ref<WebIDL::Promise> m_ready_promise; // [[ReadyPromise]]
 
