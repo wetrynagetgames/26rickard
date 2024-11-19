@@ -71,6 +71,10 @@
         "simd"
       ]
     },
+    {
+      "name": "pthread",
+      "platform": "windows"
+    },
     "simdutf",
     {
       "name": "skia",
