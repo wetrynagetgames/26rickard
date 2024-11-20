@@ -36,11 +36,14 @@
 #include <LibWeb/HTML/CustomElements/CustomElementReactionNames.h>
 #include <LibWeb/HTML/HTMLAnchorElement.h>
 #include <LibWeb/HTML/HTMLDocument.h>
+#include <LibWeb/HTML/HTMLFieldSetElement.h>
 #include <LibWeb/HTML/HTMLImageElement.h>
 #include <LibWeb/HTML/HTMLInputElement.h>
+#include <LibWeb/HTML/HTMLLegendElement.h>
 #include <LibWeb/HTML/HTMLSelectElement.h>
 #include <LibWeb/HTML/HTMLSlotElement.h>
 #include <LibWeb/HTML/HTMLStyleElement.h>
+#include <LibWeb/HTML/HTMLTableElement.h>
 #include <LibWeb/HTML/Navigable.h>
 #include <LibWeb/HTML/NavigableContainer.h>
 #include <LibWeb/HTML/Parser/HTMLParser.h>
@@ -2280,6 +2283,15 @@ ErrorOr<String> Node::name_or_description(NameOrDescription target, Document con
             for (u32 i = 0; i < labels->length(); i++) {
                 auto nodes = labels->item(i)->children_as_vector();
                 for (auto const& node : nodes) {
+                    // AD-HOC: https://wpt.fyi/results/accname/name/comp_host_language_label.html has “encapsulation”
+                    // tests, from which can be induced a requirement that when computing the accessible name for a
+                    // <label>-ed form control (“embedded control”), then any content (text content or attribute values)
+                    // from the control itself that would otherwise be included in the accessible-name computation for
+                    // it ancestor <label> must instead be skipped and not included. The HTML-AAM spec seems to maybe
+                    // be trying to achieve that result by expressing specific steps for each particular type of form
+                    // control. But what all that reduces/optimizes/simplifies down to is just, “skip over self”.
+                    if (node == this)
+                        continue;
                     if (node->is_element()) {
                         auto const& element = static_cast<DOM::Element const&>(*node);
                         auto role = element.role_or_default();
@@ -2359,6 +2371,38 @@ ErrorOr<String> Node::name_or_description(NameOrDescription target, Document con
             // TODO: Add handling for SVGTitleElement, and also confirm (through existing WPT test cases) whether
             // HTMLLabelElement is already handled (by the code for step C. “Embedded Control” above) in conformance
             // with the spec requirements — and if not, then add handling for it here.
+        }
+        // https://w3c.github.io/html-aam/#table-element-accessible-name-computation
+        // if the table element has a child that is a caption element, then use the subtree of the first such element
+        if (is<HTML::HTMLTableElement>(*element))
+            if (auto& table = (const_cast<HTML::HTMLTableElement&>(static_cast<HTML::HTMLTableElement const&>(*element))); table.caption())
+                return table.caption()->text_content().value();
+        // https://w3c.github.io/html-aam/#table-element-accessible-name-computation
+        // if the fieldset element has a child that is a legend element, then use the subtree of the first such element
+        if (is<HTML::HTMLFieldSetElement>(*element)) {
+            Optional<String> legend;
+            auto& fieldset = (const_cast<HTML::HTMLFieldSetElement&>(static_cast<HTML::HTMLFieldSetElement const&>(*element)));
+            fieldset.for_each_child_of_type<HTML::HTMLLegendElement>([&](HTML::HTMLLegendElement const& element) mutable {
+                legend = element.text_content().value();
+                return IterationDecision::Break;
+            });
+            if (legend.has_value())
+                return legend.value();
+        }
+        if (is<HTML::HTMLInputElement>(*element)) {
+            auto& input = (const_cast<HTML::HTMLInputElement&>(static_cast<HTML::HTMLInputElement const&>(*element)));
+            // https://w3c.github.io/html-aam/#input-type-image-accessible-name-computation
+            // Otherwise use the value attribute.
+            if (input.type_state() == HTML::HTMLInputElement::TypeAttributeState::Button
+                || input.type_state() == HTML::HTMLInputElement::TypeAttributeState::SubmitButton
+                || input.type_state() == HTML::HTMLInputElement::TypeAttributeState::ResetButton)
+                if (auto value = input.get_attribute(HTML::AttributeNames::value); value.has_value())
+                    return value.value();
+            // https://w3c.github.io/html-aam/#input-type-image-accessible-name-computation
+            // Otherwise use alt attribute if present and its value is not the empty string.
+            if (input.type_state() == HTML::HTMLInputElement::TypeAttributeState::ImageButton)
+                if (auto alt = element->get_attribute(HTML::AttributeNames::alt); alt.has_value())
+                    return alt.release_value();
         }
 
         // F. Otherwise, if the current node's role allows name from content, or if the current node is referenced by aria-labelledby, aria-describedby, or is a native host language text alternative element (e.g. label in HTML), or is a descendant of a native host language text alternative element:
