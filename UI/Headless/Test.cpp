@@ -23,6 +23,7 @@
 #include <LibGfx/ImageFormats/PNGWriter.h>
 #include <LibURL/URL.h>
 #include <LibWeb/HTML/SelectedFile.h>
+#include <LibWeb/HTML/Window.h>
 #include <UI/Headless/Application.h>
 #include <UI/Headless/HeadlessWebView.h>
 #include <UI/Headless/Test.h>
@@ -100,7 +101,7 @@ static ErrorOr<void> collect_ref_tests(Vector<Test>& tests, StringView path, Str
 
 static void clear_test_callbacks(HeadlessWebView& view)
 {
-    view.on_load_finish = {};
+    view.on_loading_page_and_fonts_finish = {};
     view.on_text_test_finish = {};
     view.on_web_content_crashed = {};
 }
@@ -108,7 +109,7 @@ static void clear_test_callbacks(HeadlessWebView& view)
 void run_dump_test(HeadlessWebView& view, Test& test, URL::URL const& url, int timeout_in_milliseconds)
 {
     auto timer = Core::Timer::create_single_shot(timeout_in_milliseconds, [&view, &test]() {
-        view.on_load_finish = {};
+        view.on_loading_page_and_fonts_finish = {};
         view.on_text_test_finish = {};
 
         view.on_test_complete({ test, TestResult::Timeout });
@@ -186,7 +187,7 @@ void run_dump_test(HeadlessWebView& view, Test& test, URL::URL const& url, int t
     };
 
     if (test.mode == TestMode::Layout) {
-        view.on_load_finish = [&view, &test, url, on_test_complete = move(on_test_complete)](auto const& loaded_url) {
+        view.on_loading_page_and_fonts_finish = [&view, &test, url, on_test_complete = move(on_test_complete)](auto const& loaded_url) {
             // We don't want subframe loads to trigger the test finish.
             if (!url.equals(loaded_url, URL::ExcludeFragment::Yes))
                 return;
@@ -203,7 +204,7 @@ void run_dump_test(HeadlessWebView& view, Test& test, URL::URL const& url, int t
             });
         };
     } else if (test.mode == TestMode::Text) {
-        view.on_load_finish = [&view, &test, on_test_complete, url](auto const& loaded_url) {
+        view.on_loading_page_and_fonts_finish = [&view, &test, on_test_complete, url](auto const& loaded_url) {
             // We don't want subframe loads to trigger the test finish.
             if (!url.equals(loaded_url, URL::ExcludeFragment::Yes))
                 return;
@@ -238,7 +239,7 @@ void run_dump_test(HeadlessWebView& view, Test& test, URL::URL const& url, int t
 static void run_ref_test(HeadlessWebView& view, Test& test, URL::URL const& url, int timeout_in_milliseconds)
 {
     auto timer = Core::Timer::create_single_shot(timeout_in_milliseconds, [&view, &test]() {
-        view.on_load_finish = {};
+        view.on_loading_page_and_fonts_finish = {};
         view.on_text_test_finish = {};
 
         view.on_test_complete({ test, TestResult::Timeout });
@@ -287,13 +288,16 @@ static void run_ref_test(HeadlessWebView& view, Test& test, URL::URL const& url,
         view.on_test_complete({ test, TestResult::Crashed });
     };
 
-    view.on_load_finish = [&view, &test, on_test_complete = move(on_test_complete)](auto const&) {
+    view.on_loading_page_and_fonts_finish = [&view, &test, on_test_complete = move(on_test_complete)](auto const&) {
+        dbgln("on loading page and fonts finish: {}", view.url());
         if (test.actual_screenshot) {
+            dbgln("Take expectation screenshot <- this happens too early");
             view.take_screenshot()->when_resolved([&test, on_test_complete = move(on_test_complete)](RefPtr<Gfx::Bitmap> screenshot) {
                 test.expectation_screenshot = move(screenshot);
                 on_test_complete();
             });
         } else {
+            dbgln("\nTake actual screenshot");
             view.take_screenshot()->when_resolved([&view, &test](RefPtr<Gfx::Bitmap> screenshot) {
                 test.actual_screenshot = move(screenshot);
                 view.debug_request("load-reference-page");
@@ -315,7 +319,7 @@ static void run_test(HeadlessWebView& view, Test& test, Application& app)
     // FIXME: Implement a debug-request to do this more thoroughly.
     auto promise = Core::Promise<Empty>::construct();
 
-    view.on_load_finish = [promise](auto const& url) {
+    view.on_loading_page_and_fonts_finish = [promise](auto const& url) {
         if (!url.equals("about:blank"sv))
             return;
 
@@ -425,7 +429,7 @@ ErrorOr<void> run_tests(Core::AnonymousBuffer const& theme, Web::DevicePixelSize
 
     for (size_t i = 0; i < concurrency; ++i) {
         auto& view = app.create_web_view(theme, window_size);
-        view.on_load_finish = [&](auto const&) { ++loaded_web_views; };
+        view.on_loading_page_and_fonts_finish = [&](auto const&) { ++loaded_web_views; };
     }
 
     // We need to wait for the initial about:blank load to complete before starting the tests, otherwise we may load the

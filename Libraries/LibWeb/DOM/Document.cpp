@@ -1606,7 +1606,7 @@ GC::Ref<HTML::HTMLAllCollection> Document::all()
 GC::Ref<CSS::FontFaceSet> Document::fonts()
 {
     if (!m_fonts)
-        m_fonts = CSS::FontFaceSet::create(realm());
+        m_fonts = CSS::FontFaceSet::create(page(), realm());
     return *m_fonts;
 }
 

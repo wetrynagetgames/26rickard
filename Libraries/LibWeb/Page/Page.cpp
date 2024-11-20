@@ -578,6 +578,14 @@ Vector<GC::Root<DOM::Document>> Page::documents_in_active_window() const
     return documents;
 }
 
+URL::URL Page::url() const
+{
+    if (!top_level_traversable_is_initialized())
+        return {};
+
+    return top_level_traversable()->active_document()->url();
+}
+
 void Page::clear_selection()
 {
     for (auto const& document : documents_in_active_window()) {

@@ -212,6 +212,8 @@ public:
     FindInPageResult find_in_page_previous_match();
     Optional<FindInPageQuery> last_find_in_page_query() const { return m_last_find_in_page_query; }
 
+    URL::URL url() const;
+
 private:
     explicit Page(GC::Ref<PageClient>);
     virtual void visit_edges(Visitor&) override;
@@ -368,6 +370,7 @@ public:
     virtual void page_did_request_select_dropdown([[maybe_unused]] Web::CSSPixelPoint content_position, [[maybe_unused]] Web::CSSPixels minimum_width, [[maybe_unused]] Vector<Web::HTML::SelectItem> items) { }
 
     virtual void page_did_finish_text_test([[maybe_unused]] String const& text) { }
+    virtual void page_did_finish_loading_page_and_fonts([[maybe_unused]] URL::URL const& url) { }
 
     virtual void page_did_change_theme_color(Gfx::Color) { }
 

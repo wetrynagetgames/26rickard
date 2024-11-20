@@ -93,6 +93,15 @@ void WebContentClient::did_finish_text_test(u64 page_id, String const& text)
     }
 }
 
+void WebContentClient::did_finish_loading_page_and_fonts(u64 page_id, URL::URL const& url)
+{
+    if (auto view = view_for_page_id(page_id); view.has_value()) {
+        if (view->on_loading_page_and_fonts_finish)
+            view->on_loading_page_and_fonts_finish(url);
+    }
+}
+
+
 void WebContentClient::did_find_in_page(u64 page_id, size_t current_match_index, Optional<size_t> const& total_match_count)
 {
     if (auto view = view_for_page_id(page_id); view.has_value()) {

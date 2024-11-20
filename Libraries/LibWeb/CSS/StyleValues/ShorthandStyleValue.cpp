@@ -119,6 +119,60 @@ String ShorthandStyleValue::to_string() const
             longhand(PropertyID::FontSize)->to_string(),
             longhand(PropertyID::LineHeight)->to_string(),
             longhand(PropertyID::FontFamily)->to_string()));
+    case PropertyID::FontVariant: {
+        Vector<StringView> values;
+        auto alternates = longhand(PropertyID::FontVariantAlternates)->to_font_variant_alternates();
+        if (alternates.historical_forms)
+            values.append("historical-forms"sv);
+        auto caps_or_null = longhand(PropertyID::FontVariantCaps)->to_font_variant_caps();
+        if (caps_or_null.has_value() && caps_or_null.value() != CSS::FontVariantCaps::Normal) {
+            values.append(CSS::to_string(caps_or_null.release_value()));
+        }
+        auto east_asian = longhand(PropertyID::FontVariantEastAsian)->to_font_variant_east_asian();
+        if (!east_asian.normal) {
+            if (east_asian.variant != Gfx::FontVariantEastAsian::Variant::Unset)
+                values.append(Gfx::font_variant_east_asian_to_string(east_asian));
+            if (east_asian.width != Gfx::FontVariantEastAsian::Width::Unset)
+                values.append(Gfx::font_variant_east_asian_to_string(east_asian));
+        }
+        auto ligatures = longhand(PropertyID::FontVariantLigatures)->to_font_variant_ligatures();
+        if (!ligatures.normal && !ligatures.none) {
+            if (ligatures.common != Gfx::FontVariantLigatures::Common::Unset)
+                values.append(Gfx::font_variant_ligatures_to_string(ligatures));
+            if (ligatures.discretionary != Gfx::FontVariantLigatures::Discretionary::Unset) {
+                values.append(Gfx::font_variant_ligatures_to_string(ligatures));
+            }
+            if (ligatures.historical != Gfx::FontVariantLigatures::Historical::Unset) {
+                values.append(Gfx::font_variant_ligatures_to_string(ligatures));
+            }
+            if (ligatures.contextual != Gfx::FontVariantLigatures::Contextual::Unset) {
+                values.append(Gfx::font_variant_ligatures_to_string(ligatures));
+            }
+        }
+        auto numeric = longhand(PropertyID::FontVariantNumeric)->to_font_variant_numeric();
+        if (!numeric.normal) {
+            if (numeric.ordinal)
+                values.append("ordinal"sv);
+            if (numeric.slashed_zero)
+                values.append("slashed-zero"sv);
+            if (numeric.figure != Gfx::FontVariantNumeric::Figure::Unset)
+                values.append(Gfx::font_variant_numeric_to_string(numeric));
+            if (numeric.spacing != Gfx::FontVariantNumeric::Spacing::Unset)
+                values.append(Gfx::font_variant_numeric_to_string(numeric));
+            if (numeric.fraction != Gfx::FontVariantNumeric::Fraction::Unset)
+                values.append(Gfx::font_variant_numeric_to_string(numeric));
+        }
+        auto position_or_null = longhand(PropertyID::FontVariantPosition)->to_font_variant_position();
+        if (position_or_null.has_value() && position_or_null.value() != CSS::FontVariantPosition::Normal) {
+            values.append(CSS::to_string(position_or_null.release_value()));
+        }
+        StringBuilder builder;
+        if (values.is_empty())
+            builder.append("normal"sv);
+        else
+            builder.join(' ', values);
+        return MUST(builder.to_string());
+    }
     case PropertyID::GridArea: {
         auto& row_start = longhand(PropertyID::GridRowStart)->as_grid_track_placement();
         auto& column_start = longhand(PropertyID::GridColumnStart)->as_grid_track_placement();

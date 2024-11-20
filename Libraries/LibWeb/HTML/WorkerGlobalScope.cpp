@@ -160,7 +160,7 @@ ENUMERATE_WORKER_GLOBAL_SCOPE_EVENT_HANDLERS(__ENUMERATE)
 GC::Ref<CSS::FontFaceSet> WorkerGlobalScope::fonts()
 {
     if (!m_fonts)
-        m_fonts = CSS::FontFaceSet::create(realm());
+        m_fonts = CSS::FontFaceSet::create(*page(), realm());
     return *m_fonts;
 }
 
