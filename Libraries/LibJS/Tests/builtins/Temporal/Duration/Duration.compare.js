@@ -48,7 +48,7 @@ describe("errors", () => {
             Temporal.Duration.compare(duration1, duration2);
         }).toThrowWithMessage(
             RangeError,
-            "A starting point is required for balancing calendar units"
+            "A starting point is required for comparing calendar units"
         );
 
         const duration3 = new Temporal.Duration(0, 3);
@@ -58,7 +58,7 @@ describe("errors", () => {
             Temporal.Duration.compare(duration3, duration4);
         }).toThrowWithMessage(
             RangeError,
-            "A starting point is required for balancing calendar units"
+            "A starting point is required for comparing calendar units"
         );
 
         const duration5 = new Temporal.Duration(0, 0, 5);
@@ -68,7 +68,7 @@ describe("errors", () => {
             Temporal.Duration.compare(duration5, duration6);
         }).toThrowWithMessage(
             RangeError,
-            "A starting point is required for balancing calendar units"
+            "A starting point is required for comparing calendar units"
         );
 
         // Still throws if year/month/week of one the duration objects is non-zero.
@@ -79,7 +79,7 @@ describe("errors", () => {
             Temporal.Duration.compare(duration7, duration8);
         }).toThrowWithMessage(
             RangeError,
-            "A starting point is required for balancing calendar units"
+            "A starting point is required for comparing calendar units"
         );
 
         const duration9 = new Temporal.Duration(0, 0, 9);
@@ -89,25 +89,7 @@ describe("errors", () => {
             Temporal.Duration.compare(duration9, duration10);
         }).toThrowWithMessage(
             RangeError,
-            "A starting point is required for balancing calendar units"
-        );
-    });
-
-    test("custom time zone doesn't have a getOffsetNanosecondsFor function", () => {
-        const zonedDateTime = new Temporal.ZonedDateTime(0n, {});
-        const duration = new Temporal.Duration();
-        expect(() => {
-            Temporal.Duration.compare(duration, duration, { relativeTo: zonedDateTime });
-        }).toThrowWithMessage(TypeError, "getOffsetNanosecondsFor is undefined");
-    });
-
-    test("UTC designator only allowed with bracketed time zone", () => {
-        const duration = new Temporal.Duration();
-        expect(() => {
-            Temporal.Duration.compare(duration, duration, { relativeTo: "2022-08-18T17:01Z" });
-        }).toThrowWithMessage(
-            RangeError,
-            "Invalid relativeTo string '2022-08-18T17:01Z': must not contain a UTC designator without bracketed time zone"
+            "A starting point is required for comparing calendar units"
         );
     });
 });

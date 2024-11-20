@@ -1,16 +1,14 @@
 /*
  * Copyright (c) 2021-2023, Linus Groh <linusg@serenityos.org>
  * Copyright (c) 2021, Luke Wilde <lukew@serenityos.org>
+ * Copyright (c) 2024, Tim Flynn <trflynn89@ladybird.org>
  *
  * SPDX-License-Identifier: BSD-2-Clause
  */
 
-#include <AK/TypeCasts.h>
-#include <LibJS/Runtime/GlobalObject.h>
 #include <LibJS/Runtime/Temporal/AbstractOperations.h>
 #include <LibJS/Runtime/Temporal/Duration.h>
 #include <LibJS/Runtime/Temporal/DurationConstructor.h>
-#include <LibJS/Runtime/ValueInlines.h>
 
 namespace JS::Temporal {
 
@@ -44,7 +42,7 @@ ThrowCompletionOr<Value> DurationConstructor::call()
     auto& vm = this->vm();
 
     // 1. If NewTarget is undefined, then
-    // a. Throw a TypeError exception.
+    //     a. Throw a TypeError exception.
     return vm.throw_completion<TypeError>(ErrorType::ConstructorWithoutNew, "Temporal.Duration");
 }
 
@@ -53,55 +51,51 @@ ThrowCompletionOr<GC::Ref<Object>> DurationConstructor::construct(FunctionObject
 {
     auto& vm = this->vm();
 
-    // 2. Let y be ? ToIntegerIfIntegral(years).
-    auto y = TRY(to_integer_if_integral(vm, vm.argument(0), ErrorType::TemporalInvalidDuration));
+    auto next_integer_argument = [&, index = 0]() mutable -> ThrowCompletionOr<double> {
+        if (auto value = vm.argument(index++); !value.is_undefined())
+            return to_integer_if_integral(vm, value, ErrorType::TemporalInvalidDuration);
+        return 0;
+    };
 
-    // 3. Let mo be ? ToIntegerIfIntegral(months).
-    auto mo = TRY(to_integer_if_integral(vm, vm.argument(1), ErrorType::TemporalInvalidDuration));
+    // 2. If years is undefined, let y be 0; else let y be ? ToIntegerIfIntegral(years).
+    auto years = TRY(next_integer_argument());
 
-    // 4. Let w be ? ToIntegerIfIntegral(weeks).
-    auto w = TRY(to_integer_if_integral(vm, vm.argument(2), ErrorType::TemporalInvalidDuration));
+    // 3. If months is undefined, let mo be 0; else let mo be ? ToIntegerIfIntegral(months).
+    auto months = TRY(next_integer_argument());
 
-    // 5. Let d be ? ToIntegerIfIntegral(days).
-    auto d = TRY(to_integer_if_integral(vm, vm.argument(3), ErrorType::TemporalInvalidDuration));
+    // 4. If weeks is undefined, let w be 0; else let w be ? ToIntegerIfIntegral(weeks).
+    auto weeks = TRY(next_integer_argument());
 
-    // 6. Let h be ? ToIntegerIfIntegral(hours).
-    auto h = TRY(to_integer_if_integral(vm, vm.argument(4), ErrorType::TemporalInvalidDuration));
+    // 5. If days is undefined, let d be 0; else let d be ? ToIntegerIfIntegral(days).
+    auto days = TRY(next_integer_argument());
 
-    // 7. Let m be ? ToIntegerIfIntegral(minutes).
-    auto m = TRY(to_integer_if_integral(vm, vm.argument(5), ErrorType::TemporalInvalidDuration));
+    // 6. If hours is undefined, let h be 0; else let h be ? ToIntegerIfIntegral(hours).
+    auto hours = TRY(next_integer_argument());
 
-    // 8. Let s be ? ToIntegerIfIntegral(seconds).
-    auto s = TRY(to_integer_if_integral(vm, vm.argument(6), ErrorType::TemporalInvalidDuration));
+    // 7. If minutes is undefined, let m be 0; else let m be ? ToIntegerIfIntegral(minutes).
+    auto minutes = TRY(next_integer_argument());
 
-    // 9. Let ms be ? ToIntegerIfIntegral(milliseconds).
-    auto ms = TRY(to_integer_if_integral(vm, vm.argument(7), ErrorType::TemporalInvalidDuration));
+    // 8. If seconds is undefined, let s be 0; else let s be ? ToIntegerIfIntegral(seconds).
+    auto seconds = TRY(next_integer_argument());
 
-    // 10. Let mis be ? ToIntegerIfIntegral(microseconds).
-    auto mis = TRY(to_integer_if_integral(vm, vm.argument(8), ErrorType::TemporalInvalidDuration));
+    // 9. If milliseconds is undefined, let ms be 0; else let ms be ? ToIntegerIfIntegral(milliseconds).
+    auto milliseconds = TRY(next_integer_argument());
 
-    // 11. Let ns be ? ToIntegerIfIntegral(nanoseconds).
-    auto ns = TRY(to_integer_if_integral(vm, vm.argument(9), ErrorType::TemporalInvalidDuration));
+    // 10. If microseconds is undefined, let mis be 0; else let mis be ? ToIntegerIfIntegral(microseconds).
+    auto microseconds = TRY(next_integer_argument());
+
+    // 11. If nanoseconds is undefined, let ns be 0; else let ns be ? ToIntegerIfIntegral(nanoseconds).
+    auto nanoseconds = TRY(next_integer_argument());
 
     // 12. Return ? CreateTemporalDuration(y, mo, w, d, h, m, s, ms, mis, ns, NewTarget).
-    return TRY(create_temporal_duration(vm, y, mo, w, d, h, m, s, ms, mis, ns, &new_target));
+    return TRY(create_temporal_duration(vm, years, months, weeks, days, hours, minutes, seconds, milliseconds, microseconds, nanoseconds, new_target));
 }
 
 // 7.2.2 Temporal.Duration.from ( item ), https://tc39.es/proposal-temporal/#sec-temporal.duration.from
 JS_DEFINE_NATIVE_FUNCTION(DurationConstructor::from)
 {
-    auto item = vm.argument(0);
-
-    // 1. If Type(item) is Object and item has an [[InitializedTemporalDuration]] internal slot, then
-    if (item.is_object() && is<Duration>(item.as_object())) {
-        auto& duration = static_cast<Duration&>(item.as_object());
-
-        // a. Return ! CreateTemporalDuration(item.[[Years]], item.[[Months]], item.[[Weeks]], item.[[Days]], item.[[Hours]], item.[[Minutes]], item.[[Seconds]], item.[[Milliseconds]], item.[[Microseconds]], item.[[Nanoseconds]]).
-        return MUST(create_temporal_duration(vm, duration.years(), duration.months(), duration.weeks(), duration.days(), duration.hours(), duration.minutes(), duration.seconds(), duration.milliseconds(), duration.microseconds(), duration.nanoseconds()));
-    }
-
-    // 2. Return ? ToTemporalDuration(item).
-    return TRY(to_temporal_duration(vm, item));
+    // 1. Return ? ToTemporalDuration(item).
+    return TRY(to_temporal_duration(vm, vm.argument(0)));
 }
 
 // 7.2.3 Temporal.Duration.compare ( one, two [ , options ] ), https://tc39.es/proposal-temporal/#sec-temporal.duration.compare
@@ -113,36 +107,72 @@ JS_DEFINE_NATIVE_FUNCTION(DurationConstructor::compare)
     // 2. Set two to ? ToTemporalDuration(two).
     auto two = TRY(to_temporal_duration(vm, vm.argument(1)));
 
-    // 3. Set options to ? GetOptionsObject(options).
-    auto const* options = TRY(get_options_object(vm, vm.argument(2)));
+    // 3. Let resolvedOptions be ? GetOptionsObject(options).
+    auto resolved_options = TRY(get_options_object(vm, vm.argument(2)));
 
-    // 4. Let relativeTo be ? ToRelativeTemporalObject(options).
-    auto relative_to = relative_to_converted_to_value(TRY(to_relative_temporal_object(vm, *options)));
+    // 4. Let relativeToRecord be ? GetTemporalRelativeToOption(resolvedOptions).
+    auto relative_to_record = TRY(get_temporal_relative_to_option(vm, resolved_options));
 
-    // 5. Let shift1 be ? CalculateOffsetShift(relativeTo, one.[[Years]], one.[[Months]], one.[[Weeks]], one.[[Days]]).
-    auto shift1 = TRY(calculate_offset_shift(vm, relative_to, one->years(), one->months(), one->weeks(), one->days()));
-
-    // 6. Let shift2 be ? CalculateOffsetShift(relativeTo, two.[[Years]], two.[[Months]], two.[[Weeks]], two.[[Days]]).
-    auto shift2 = TRY(calculate_offset_shift(vm, relative_to, two->years(), two->months(), two->weeks(), two->days()));
-
-    double days1;
-    double days2;
-
-    // 7. If any of one.[[Years]], two.[[Years]], one.[[Months]], two.[[Months]], one.[[Weeks]], or two.[[Weeks]] are not 0, then
-    if (one->years() != 0 || two->years() != 0 || one->months() != 0 || two->months() != 0 || one->weeks() != 0 || two->weeks() != 0) {
-        // a. Let unbalanceResult1 be ? UnbalanceDurationRelative(one.[[Years]], one.[[Months]], one.[[Weeks]], one.[[Days]], "day", relativeTo).
-        auto unbalance_result1 = TRY(unbalance_duration_relative(vm, one->years(), one->months(), one->weeks(), one->days(), "day"sv, relative_to));
-
-        // b. Let unbalanceResult2 be ? UnbalanceDurationRelative(two.[[Years]], two.[[Months]], two.[[Weeks]], two.[[Days]], "day", relativeTo).
-        auto unbalance_result2 = TRY(unbalance_duration_relative(vm, two->years(), two->months(), two->weeks(), two->days(), "day"sv, relative_to));
-
-        // c. Let days1 be unbalanceResult1.[[Days]].
-        days1 = unbalance_result1.days;
-
-        // d. Let days2 be unbalanceResult2.[[Days]].
-        days2 = unbalance_result2.days;
+    // 5. If one.[[Years]] = two.[[Years]], and one.[[Months]] = two.[[Months]], and one.[[Weeks]] = two.[[Weeks]], and
+    //    one.[[Days]] = two.[[Days]], and one.[[Hours]] = two.[[Hours]], and one.[[Minutes]] = two.[[Minutes]], and
+    //    one.[[Seconds]] = two.[[Seconds]], and one.[[Milliseconds]] = two.[[Milliseconds]], and
+    //    one.[[Microseconds]] = two.[[Microseconds]], and one.[[Nanoseconds]] = two.[[Nanoseconds]], then
+    if (one->years() == two->years()
+        && one->months() == two->months()
+        && one->weeks() == two->weeks()
+        && one->days() == two->days()
+        && one->hours() == two->hours()
+        && one->minutes() == two->minutes()
+        && one->seconds() == two->seconds()
+        && one->milliseconds() == two->milliseconds()
+        && one->microseconds() == two->microseconds()
+        && one->nanoseconds() == two->nanoseconds()) {
+        // a. Return +0𝔽.
+        return 0;
     }
-    // 8. Else,
+
+    // 6. Let zonedRelativeTo be relativeToRecord.[[ZonedRelativeTo]].
+    // 7. Let plainRelativeTo be relativeToRecord.[[PlainRelativeTo]].
+    auto [zoned_relative_to, plain_relative_to] = relative_to_record;
+
+    // 8. Let largestUnit1 be DefaultTemporalLargestUnit(one).
+    auto largest_unit1 = default_temporal_largest_unit(one);
+
+    // 9. Let largestUnit2 be DefaultTemporalLargestUnit(two).
+    auto largest_unit2 = default_temporal_largest_unit(two);
+
+    // 10. Let duration1 be ToInternalDurationRecord(one).
+    auto duration1 = to_internal_duration_record(vm, one);
+
+    // 11. Let duration2 be ToInternalDurationRecord(two).
+    auto duration2 = to_internal_duration_record(vm, two);
+
+    // 12. If zonedRelativeTo is not undefined, and either TemporalUnitCategory(largestUnit1) or TemporalUnitCategory(largestUnit2) is date, then
+    if (zoned_relative_to && (temporal_unit_category(largest_unit1) == UnitCategory::Date || temporal_unit_category(largest_unit2) == UnitCategory::Date)) {
+        // FIXME: a. Let timeZone be zonedRelativeTo.[[TimeZone]].
+        // FIXME: b. Let calendar be zonedRelativeTo.[[Calendar]].
+        // FIXME: c. Let after1 be ? AddZonedDateTime(zonedRelativeTo.[[EpochNanoseconds]], timeZone, calendar, duration1, constrain).
+        // FIXME: d. Let after2 be ? AddZonedDateTime(zonedRelativeTo.[[EpochNanoseconds]], timeZone, calendar, duration2, constrain).
+        // FIXME: e. If after1 > after2, return 1𝔽.
+        // FIXME: f. If after1 < after2, return -1𝔽.
+
+        // g. Return +0𝔽.
+        return 0;
+    }
+
+    double days1 = 0;
+    double days2 = 0;
+
+    // 13. If IsCalendarUnit(largestUnit1) is true or IsCalendarUnit(largestUnit2) is true, then
+    if (is_calendar_unit(largest_unit1) || is_calendar_unit(largest_unit2)) {
+        // a. If plainRelativeTo is undefined, throw a RangeError exception.
+        if (!plain_relative_to)
+            return vm.throw_completion<RangeError>(ErrorType::TemporalMissingStartingPoint, "calendar units");
+
+        // FIXME: b. Let days1 be ? DateDurationDays(duration1.[[Date]], plainRelativeTo).
+        // FIXME: c. Let days2 be ? DateDurationDays(duration2.[[Date]], plainRelativeTo).
+    }
+    // 14. Else,
     else {
         // a. Let days1 be one.[[Days]].
         days1 = one->days();
@@ -151,22 +181,14 @@ JS_DEFINE_NATIVE_FUNCTION(DurationConstructor::compare)
         days2 = two->days();
     }
 
-    // 9. Let ns1 be ! TotalDurationNanoseconds(days1, one.[[Hours]], one.[[Minutes]], one.[[Seconds]], one.[[Milliseconds]], one.[[Microseconds]], one.[[Nanoseconds]], shift1).
-    auto ns1 = total_duration_nanoseconds(days1, one->hours(), one->minutes(), one->seconds(), one->milliseconds(), one->microseconds(), Crypto::SignedBigInteger { one->nanoseconds() }, shift1);
+    // 15. Let timeDuration1 be ? Add24HourDaysToTimeDuration(duration1.[[Time]], days1).
+    auto time_duration1 = TRY(add_24_hour_days_to_time_duration(vm, duration1.time, days1));
 
-    // 10. Let ns2 be ! TotalDurationNanoseconds(days2, two.[[Hours]], two.[[Minutes]], two.[[Seconds]], two.[[Milliseconds]], two.[[Microseconds]], two.[[Nanoseconds]], shift2).
-    auto ns2 = total_duration_nanoseconds(days2, two->hours(), two->minutes(), two->seconds(), two->milliseconds(), two->microseconds(), Crypto::SignedBigInteger { two->nanoseconds() }, shift2);
+    // 16. Let timeDuration2 be ? Add24HourDaysToTimeDuration(duration2.[[Time]], days2).
+    auto time_duration2 = TRY(add_24_hour_days_to_time_duration(vm, duration2.time, days2));
 
-    // 11. If ns1 > ns2, return 1𝔽.
-    if (ns1 > ns2)
-        return Value(1);
-
-    // 12. If ns1 < ns2, return -1𝔽.
-    if (ns1 < ns2)
-        return Value(-1);
-
-    // 13. Return +0𝔽.
-    return Value(0);
+    // 17. Return 𝔽(CompareTimeDuration(timeDuration1, timeDuration2)).
+    return compare_time_duration(time_duration1, time_duration2);
 }
 
 }

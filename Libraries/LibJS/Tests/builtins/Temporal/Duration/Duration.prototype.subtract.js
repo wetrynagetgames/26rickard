@@ -64,23 +64,14 @@ describe("errors", () => {
 
         expect(() => {
             yearDuration.subtract(durationToSubtract);
-        }).toThrowWithMessage(
-            RangeError,
-            "A starting point is required for balancing year, month or week"
-        );
+        }).toThrowWithMessage(RangeError, "Largest unit must not be a calendar unit");
 
         expect(() => {
             monthDuration.subtract(durationToSubtract);
-        }).toThrowWithMessage(
-            RangeError,
-            "A starting point is required for balancing year, month or week"
-        );
+        }).toThrowWithMessage(RangeError, "Largest unit must not be a calendar unit");
 
         expect(() => {
             weekDuration.subtract(durationToSubtract);
-        }).toThrowWithMessage(
-            RangeError,
-            "A starting point is required for balancing year, month or week"
-        );
+        }).toThrowWithMessage(RangeError, "Largest unit must not be a calendar unit");
     });
 });

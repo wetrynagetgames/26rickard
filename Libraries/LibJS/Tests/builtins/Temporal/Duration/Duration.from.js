@@ -39,17 +39,8 @@ describe("correct behavior", () => {
         expectDurationOneToTen(duration);
     });
 
-    test("NaN value becomes zero", () => {
-        // NOTE: NaN does *not* throw a RangeError anymore - which is questionable, IMO - as of:
-        // https://github.com/tc39/proposal-temporal/commit/8c854507a52efbc6e9eb2642f0f928df38e5c021
-        const duration = Temporal.Duration.from({ years: "foo" });
-        expect(duration.years).toBe(0);
-    });
-
     test("Duration string argument", () => {
-        // FIXME: yes, this needs 11 instead of 10 for nanoseconds for the test to pass.
-        //        See comment in parse_temporal_duration_string().
-        const duration = Temporal.Duration.from("P1Y2M3W4DT5H6M7.008009011S");
+        const duration = Temporal.Duration.from("P1Y2M3W4DT5H6M7.008009010S");
         expectDurationOneToTen(duration);
     });
 });
@@ -67,6 +58,20 @@ describe("errors", () => {
         }).toThrowWithMessage(
             RangeError,
             "Invalid value for duration property 'years': must be an integer, got 1.2" // ...29999999999999 - let's not include that in the test :^)
+        );
+
+        expect(() => {
+            Temporal.Duration.from({ years: "foo" });
+        }).toThrowWithMessage(
+            RangeError,
+            "Invalid value for duration property 'years': must be an integer, got foo"
+        );
+
+        expect(() => {
+            Temporal.Duration.from({ years: NaN });
+        }).toThrowWithMessage(
+            RangeError,
+            "Invalid value for duration property 'years': must be an integer, got NaN"
         );
     });
 
@@ -90,10 +95,7 @@ describe("errors", () => {
         for (const value of values) {
             expect(() => {
                 Temporal.Duration.from(value);
-            }).toThrowWithMessage(
-                RangeError,
-                `Invalid duration string '${value}': fractional hours must not be proceeded by minutes or seconds`
-            );
+            }).toThrowWithMessage(RangeError, `Invalid duration string '${value}'`);
         }
     });
 
@@ -102,10 +104,7 @@ describe("errors", () => {
         for (const value of values) {
             expect(() => {
                 Temporal.Duration.from(value);
-            }).toThrowWithMessage(
-                RangeError,
-                `Invalid duration string '${value}': fractional minutes must not be proceeded by seconds`
-            );
+            }).toThrowWithMessage(RangeError, `Invalid duration string '${value}'`);
         }
     });
 

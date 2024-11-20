@@ -1,5 +1,6 @@
 /*
  * Copyright (c) 2021, Linus Groh <linusg@serenityos.org>
+ * Copyright (c) 2024, Tim Flynn <trflynn89@ladybird.org>
  *
  * SPDX-License-Identifier: BSD-2-Clause
  */
@@ -22,16 +23,11 @@ public:
 private:
     explicit DurationPrototype(Realm&);
 
-    JS_DECLARE_NATIVE_FUNCTION(years_getter);
-    JS_DECLARE_NATIVE_FUNCTION(months_getter);
-    JS_DECLARE_NATIVE_FUNCTION(weeks_getter);
-    JS_DECLARE_NATIVE_FUNCTION(days_getter);
-    JS_DECLARE_NATIVE_FUNCTION(hours_getter);
-    JS_DECLARE_NATIVE_FUNCTION(minutes_getter);
-    JS_DECLARE_NATIVE_FUNCTION(seconds_getter);
-    JS_DECLARE_NATIVE_FUNCTION(milliseconds_getter);
-    JS_DECLARE_NATIVE_FUNCTION(microseconds_getter);
-    JS_DECLARE_NATIVE_FUNCTION(nanoseconds_getter);
+#define __JS_ENUMERATE(unit) \
+    JS_DECLARE_NATIVE_FUNCTION(unit##_getter);
+    JS_ENUMERATE_DURATION_UNITS
+#undef __JS_ENUMERATE
+
     JS_DECLARE_NATIVE_FUNCTION(sign_getter);
     JS_DECLARE_NATIVE_FUNCTION(blank_getter);
     JS_DECLARE_NATIVE_FUNCTION(with);
