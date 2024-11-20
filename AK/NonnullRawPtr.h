@@ -7,60 +7,41 @@
 #pragma once
 
 #include <AK/Forward.h>
+#include <AK/Noncopyable.h>
 #include <AK/Traits.h>
 
 namespace AK {
 
 template<typename T>
 requires(!IsLvalueReference<T> && !IsRvalueReference<T>) class [[nodiscard]] NonnullRawPtr {
+    AK_MAKE_DEFAULT_COPYABLE(NonnullRawPtr);
+    AK_MAKE_DEFAULT_MOVABLE(NonnullRawPtr);
+
 public:
     using ValueType = T;
 
-    NonnullRawPtr() = delete;
+    constexpr NonnullRawPtr() = delete;
+    constexpr NonnullRawPtr(T const&&) = delete;
 
-    NonnullRawPtr(T& other)
+    constexpr NonnullRawPtr(T& other)
         : m_ptr(&other)
     {
     }
 
-    NonnullRawPtr(NonnullRawPtr const& other)
-        : m_ptr(other.m_ptr)
-    {
-    }
+    constexpr operator bool() const = delete;
+    constexpr bool operator!() const = delete;
 
-    NonnullRawPtr(NonnullRawPtr&& other)
-        : m_ptr(other.m_ptr)
-    {
-    }
+    constexpr operator T&() { return *m_ptr; }
+    constexpr operator T const&() const { return *m_ptr; }
 
-    NonnullRawPtr& operator=(NonnullRawPtr const& other)
-    {
-        m_ptr = other.m_ptr;
+    [[nodiscard]] ALWAYS_INLINE constexpr T& value() { return *m_ptr; }
+    [[nodiscard]] ALWAYS_INLINE constexpr T const& value() const { return *m_ptr; }
 
-        return *this;
-    }
+    [[nodiscard]] ALWAYS_INLINE constexpr T& operator*() { return value(); }
+    [[nodiscard]] ALWAYS_INLINE constexpr T const& operator*() const { return value(); }
 
-    NonnullRawPtr& operator=(NonnullRawPtr&& other)
-    {
-        m_ptr = other.m_ptr;
-
-        return *this;
-    }
-
-    operator bool() const = delete;
-    bool operator!() const = delete;
-
-    operator T&() { return *m_ptr; }
-    operator T const&() const { return *m_ptr; }
-
-    [[nodiscard]] ALWAYS_INLINE T& value() { return *m_ptr; }
-    [[nodiscard]] ALWAYS_INLINE T const& value() const { return *m_ptr; }
-
-    [[nodiscard]] ALWAYS_INLINE T& operator*() { return value(); }
-    [[nodiscard]] ALWAYS_INLINE T const& operator*() const { return value(); }
-
-    ALWAYS_INLINE RETURNS_NONNULL T* operator->() { return &value(); }
-    ALWAYS_INLINE RETURNS_NONNULL T const* operator->() const { return &value(); }
+    ALWAYS_INLINE RETURNS_NONNULL constexpr T* operator->() { return &value(); }
+    ALWAYS_INLINE RETURNS_NONNULL constexpr T const* operator->() const { return &value(); }
 
 private:
     T* m_ptr;
