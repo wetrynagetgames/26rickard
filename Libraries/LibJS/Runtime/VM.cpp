@@ -38,7 +38,7 @@ namespace JS {
 ErrorOr<NonnullRefPtr<VM>> VM::create(OwnPtr<CustomData> custom_data)
 {
     ErrorMessages error_messages {};
-    error_messages[to_underlying(ErrorMessage::OutOfMemory)] = TRY(String::from_utf8(ErrorType::OutOfMemory.message()));
+    error_messages[to_underlying(ErrorMessage::OutOfMemory)] = TRY(String::from_wtf8(ErrorType::OutOfMemory.message()));
 
     auto vm = adopt_ref(*new VM(move(custom_data), move(error_messages)));
 
@@ -56,7 +56,7 @@ ErrorOr<NonnullRefPtr<VM>> VM::create(OwnPtr<CustomData> custom_data)
 template<size_t... code_points>
 static constexpr auto make_single_ascii_character_strings(IndexSequence<code_points...>)
 {
-    return AK::Array { (String::from_code_point(static_cast<u32>(code_points)))... };
+    return AK::Array { (String::from_code_point(AsciiChar(code_points)))... };
 }
 
 static constexpr auto single_ascii_character_strings = make_single_ascii_character_strings(MakeIndexSequence<128>());

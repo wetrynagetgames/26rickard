@@ -14,8 +14,8 @@
 #include <AK/StringData.h>
 #include <AK/StringView.h>
 #include <AK/UnicodeUtils.h>
-#include <AK/Utf16View.h>
 #include <AK/Utf32View.h>
+#include <AK/Wtf16ByteView.h>
 
 #include <simdutf.h>
 
@@ -50,7 +50,7 @@ StringBuilder::StringBuilder(Buffer buffer)
 {
 }
 
-inline ErrorOr<void> StringBuilder::will_append(size_t size)
+ErrorOr<void> StringBuilder::will_append(size_t size)
 {
     Checked<size_t> needed_capacity = m_buffer.size();
     needed_capacity += size;
@@ -97,6 +97,11 @@ ErrorOr<void> StringBuilder::try_append(char ch)
     return {};
 }
 
+ErrorOr<void> StringBuilder::try_append(UnicodeCodePoint cp)
+{
+    return try_append_code_point(cp);
+}
+
 ErrorOr<void> StringBuilder::try_append_repeated(char ch, size_t n)
 {
     TRY(will_append(n));
@@ -135,6 +140,11 @@ void StringBuilder::append(char ch)
     MUST(try_append(ch));
 }
 
+void StringBuilder::append(UnicodeCodePoint cp)
+{
+    MUST(try_append(cp));
+}
+
 void StringBuilder::append_repeated(char ch, size_t n)
 {
     MUST(try_append_repeated(ch, n));
@@ -160,25 +170,25 @@ ByteString StringBuilder::to_byte_string() const
 ErrorOr<String> StringBuilder::to_string()
 {
     if (m_buffer.is_inline())
-        return String::from_utf8(string_view());
+        return String::from_wtf8(string_view());
     return String::from_string_builder({}, *this);
 }
 
 String StringBuilder::to_string_without_validation()
 {
     if (m_buffer.is_inline())
-        return String::from_utf8_without_validation(string_view().bytes());
+        return String::from_wtf8_without_validation(string_view().bytes());
     return String::from_string_builder_without_validation({}, *this);
 }
 
 FlyString StringBuilder::to_fly_string_without_validation() const
 {
-    return FlyString::from_utf8_without_validation(string_view().bytes());
+    return FlyString::from_wtf8_without_validation(string_view().bytes());
 }
 
 ErrorOr<FlyString> StringBuilder::to_fly_string() const
 {
-    return FlyString::from_utf8(string_view());
+    return FlyString::from_wtf8(string_view());
 }
 
 u8* StringBuilder::data()
@@ -203,12 +213,10 @@ void StringBuilder::clear()
 
 ErrorOr<void> StringBuilder::try_append_code_point(u32 code_point)
 {
-    auto nwritten = TRY(AK::UnicodeUtils::try_code_point_to_utf8(code_point, [this](char c) { return try_append(c); }));
-    if (nwritten < 0) {
-        TRY(try_append(0xef));
-        TRY(try_append(0xbf));
-        TRY(try_append(0xbd));
-    }
+    TRY(AK::UnicodeUtils::try_code_point_to_utf8_lossy(
+        code_point,
+        [this](char c) { return try_append(c); },
+        [this](size_t n) { return will_append(n); }));
     return {};
 }
 
@@ -239,7 +247,7 @@ void StringBuilder::append_code_point(u32 code_point)
     }
 }
 
-ErrorOr<void> StringBuilder::try_append(Utf16View const& utf16_view)
+ErrorOr<void> StringBuilder::try_append(Wtf16ByteView const& utf16_view)
 {
     if (utf16_view.is_empty())
         return {};
@@ -249,7 +257,7 @@ ErrorOr<void> StringBuilder::try_append(Utf16View const& utf16_view)
     // Possibly over-allocate a little to ensure we don't have to allocate later.
     TRY(will_append(maximum_utf8_length));
 
-    Utf16View remaining_view = utf16_view;
+    Wtf16ByteView remaining_view = utf16_view;
     for (;;) {
         auto uninitialized_data_pointer = static_cast<char*>(m_buffer.end_pointer());
 
@@ -297,7 +305,7 @@ ErrorOr<void> StringBuilder::try_append(Utf16View const& utf16_view)
             uninitialized_data_pointer[bytes_just_written++] = (((code_unit >> 12) & 0x0f) | 0xe0);
             uninitialized_data_pointer[bytes_just_written++] = (((code_unit >> 6) & 0x3f) | 0x80);
             uninitialized_data_pointer[bytes_just_written++] = (((code_unit >> 0) & 0x3f) | 0x80);
-        } while (first_invalid_code_unit < remaining_view.length_in_code_units() && Utf16View::is_low_surrogate(remaining_view.data()[first_invalid_code_unit]));
+        } while (first_invalid_code_unit < remaining_view.length_in_code_units() && Wtf16ByteView::is_low_surrogate(remaining_view.data()[first_invalid_code_unit]));
 
         // Code unit might no longer be invalid, retry on the remaining data.
         m_buffer.set_size(m_buffer.size() + bytes_just_written);
@@ -307,7 +315,7 @@ ErrorOr<void> StringBuilder::try_append(Utf16View const& utf16_view)
     return {};
 }
 
-void StringBuilder::append(Utf16View const& utf16_view)
+void StringBuilder::append(Wtf16ByteView const& utf16_view)
 {
     MUST(try_append(utf16_view));
 }
@@ -376,6 +384,30 @@ auto StringBuilder::leak_buffer_for_string_construction(Badge<Detail::StringData
     }
 
     return {};
+}
+
+template<>
+ErrorOr<String> string_builder_to<String>(StringBuilder&& builder)
+{
+    return builder.to_string();
+}
+
+template<>
+ErrorOr<FlyString> string_builder_to<FlyString>(StringBuilder&& builder)
+{
+    return builder.to_fly_string();
+}
+
+template<>
+ErrorOr<ByteString> string_builder_to<ByteString>(StringBuilder&& builder)
+{
+    return builder.to_byte_string();
+}
+
+template<>
+ErrorOr<ByteBuffer> string_builder_to<ByteBuffer>(StringBuilder&& builder)
+{
+    return builder.to_byte_buffer();
 }
 
 }

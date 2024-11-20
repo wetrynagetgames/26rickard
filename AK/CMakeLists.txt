@@ -9,7 +9,6 @@ set(SOURCES
     ByteString.cpp
     Error.cpp
     FloatingPointStringConversions.cpp
-    FlyString.cpp
     Format.cpp
     GenericLexer.cpp
     Hex.cpp
@@ -23,7 +22,6 @@ set(SOURCES
     SipHash.cpp
     StackInfo.cpp
     Stream.cpp
-    String.cpp
     StringBase.cpp
     StringBuilder.cpp
     StringFloatingPointConversions.cpp
@@ -31,9 +29,12 @@ set(SOURCES
     StringUtils.cpp
     StringView.cpp
     Time.cpp
-    Utf16View.cpp
     Utf32View.cpp
-    Utf8View.cpp
+    Utf8String.cpp
+    Wtf16ByteView.cpp
+    Wtf8ByteView.cpp
+    Wtf8FlyString.cpp
+    Wtf8String.cpp
     kmalloc.cpp
 )
 

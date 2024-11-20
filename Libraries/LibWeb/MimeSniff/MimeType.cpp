@@ -11,7 +11,7 @@
 #include <AK/GenericLexer.h>
 #include <AK/String.h>
 #include <AK/StringBuilder.h>
-#include <AK/Utf8View.h>
+#include <AK/Wtf8ByteView.h>
 #include <LibWeb/Fetch/Infrastructure/HTTP.h>
 #include <LibWeb/Infra/Strings.h>
 #include <LibWeb/MimeSniff/MimeType.h>
@@ -34,7 +34,7 @@ static bool contains_only_http_quoted_string_token_code_points(StringView string
     // https://mimesniff.spec.whatwg.org/#http-quoted-string-token-code-point
     // An HTTP quoted-string token code point is U+0009 TAB, a code point in the range U+0020 SPACE to U+007E (~), inclusive,
     // or a code point in the range U+0080 through U+00FF (ÿ), inclusive.
-    for (auto ch : Utf8View(string)) {
+    for (auto ch : Wtf8ByteView(string)) {
         if (!(ch == '\t' || (ch >= 0x20 && ch <= 0x7E) || (ch >= 0x80 && ch <= 0xFF)))
             return false;
     }
@@ -84,7 +84,7 @@ MimeType MimeType::create(String type, String subtype)
 Optional<MimeType> MimeType::parse(StringView string)
 {
     // Verify that the input string is valid UTF-8 first, so we don't have to think about it anymore.
-    if (!Utf8View(string).validate())
+    if (!Wtf8ByteView(string).validate())
         return OptionalNone {};
 
     // 1. Remove any leading and trailing HTTP whitespace from input.
@@ -166,7 +166,7 @@ Optional<MimeType> MimeType::parse(StringView string)
         // 9. Otherwise:
         else {
             // 1. Set parameterValue to the result of collecting a sequence of code points that are not U+003B (;) from input, given position.
-            parameter_value = String::from_utf8_without_validation(lexer.consume_until(';').bytes());
+            parameter_value = String::from_wtf8_without_validation(lexer.consume_until(';').bytes());
 
             // 2. Remove any trailing HTTP whitespace from parameterValue.
             parameter_value = MUST(parameter_value.trim(Fetch::Infrastructure::HTTP_WHITESPACE, TrimMode::Right));

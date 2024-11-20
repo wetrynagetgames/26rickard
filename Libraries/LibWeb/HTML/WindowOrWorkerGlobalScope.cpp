@@ -8,8 +8,8 @@
 
 #include <AK/QuickSort.h>
 #include <AK/String.h>
-#include <AK/Utf8View.h>
 #include <AK/Vector.h>
+#include <AK/Wtf8ByteView.h>
 #include <LibGC/Function.h>
 #include <LibJS/Runtime/Array.h>
 #include <LibWeb/Bindings/MainThreadVM.h>
@@ -729,7 +729,7 @@ void WindowOrWorkerGlobalScopeMixin::report_an_exception(JS::Value const& e)
     // NOTE: urlString is set below once we have determined whether we are dealing with a script or a module.
     String url_string;
     auto script_or_module_filename = [](auto const& script_or_module) {
-        return MUST(String::from_utf8(script_or_module->filename()));
+        return MUST(String::from_wtf8(script_or_module->filename()));
     };
 
     // 6. If script is a classic script and script's muted errors is true, then set message to "Script error.",

@@ -98,7 +98,7 @@ ErrorOr<ByteString, ParseRegexPatternError> parse_regex_pattern(StringView patte
         return ParseRegexPatternError { "Out of memory"sv };
 
     auto utf16_pattern = utf16_pattern_result.release_value();
-    Utf16View utf16_pattern_view { utf16_pattern };
+    Wtf16ByteView utf16_pattern_view { utf16_pattern };
     StringBuilder builder;
 
     // If the Unicode flag is set, append each code point to the pattern. Otherwise, append each
@@ -285,7 +285,7 @@ ByteString RegExpObject::escape_regexp_pattern() const
 
     // FIXME: Check the 'u' and 'v' flags and escape accordingly
     StringBuilder builder;
-    auto pattern = Utf8View { m_pattern };
+    auto pattern = Wtf8ByteView { m_pattern };
     auto escaped = false;
     for (auto code_point : pattern) {
         if (escaped) {

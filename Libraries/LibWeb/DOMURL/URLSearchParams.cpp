@@ -7,7 +7,7 @@
 
 #include <AK/QuickSort.h>
 #include <AK/StringBuilder.h>
-#include <AK/Utf8View.h>
+#include <AK/Wtf8ByteView.h>
 #include <LibTextCodec/Decoder.h>
 #include <LibTextCodec/Encoder.h>
 #include <LibURL/Parser.h>
@@ -116,8 +116,8 @@ Vector<QueryParam> url_decode(StringView input)
         auto space_decoded_value = value.replace("+"sv, " "sv, ReplaceMode::All);
 
         // 5. Let nameString and valueString be the result of running UTF-8 decode without BOM on the percent-decoding of name and value, respectively.
-        auto name_string = String::from_utf8_with_replacement_character(URL::percent_decode(space_decoded_name), String::WithBOMHandling::No);
-        auto value_string = String::from_utf8_with_replacement_character(URL::percent_decode(space_decoded_value), String::WithBOMHandling::No);
+        auto name_string = String::from_wtf8_with_replacement_character(URL::percent_decode(space_decoded_name), String::WithBOMHandling::No);
+        auto value_string = String::from_wtf8_with_replacement_character(URL::percent_decode(space_decoded_value), String::WithBOMHandling::No);
 
         output.empend(move(name_string), move(value_string));
     }

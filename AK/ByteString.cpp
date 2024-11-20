@@ -11,8 +11,8 @@
 #include <AK/Function.h>
 #include <AK/StdLibExtras.h>
 #include <AK/StringView.h>
-#include <AK/Utf8View.h>
 #include <AK/Vector.h>
+#include <AK/Wtf8ByteView.h>
 
 namespace AK {
 
@@ -392,10 +392,10 @@ Utf8CodePointIterator ByteString::code_points() const&
     return Utf8CodePointIterator { reinterpret_cast<u8 const*>(characters()), length() };
 }
 
-ErrorOr<ByteString> ByteString::from_utf8(ReadonlyBytes bytes)
+ErrorOr<ByteString> ByteString::from_wtf8(ReadonlyBytes bytes)
 {
-    if (!Utf8View(bytes).validate())
-        return Error::from_string_literal("ByteString::from_utf8: Input was not valid UTF-8");
+    if (!Wtf8ByteView(bytes).validate())
+        return Error::from_string_literal("ByteString::from_wtf8: Input was not valid UTF-8");
     return ByteString { *StringImpl::create(bytes) };
 }
 

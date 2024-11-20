@@ -8,7 +8,7 @@
 #include <AK/Checked.h>
 #include <AK/Function.h>
 #include <AK/StringBuilder.h>
-#include <AK/Utf16View.h>
+#include <AK/Wtf16ByteView.h>
 #include <LibGC/Heap.h>
 #include <LibJS/Runtime/AbstractOperations.h>
 #include <LibJS/Runtime/Array.h>
@@ -50,7 +50,7 @@ static ThrowCompletionOr<Utf16String> utf16_string_from(VM& vm)
 
 // 22.1.3.21.1 SplitMatch ( S, q, R ), https://tc39.es/ecma262/#sec-splitmatch
 // FIXME: This no longer exists in the spec!
-static Optional<size_t> split_match(Utf16View const& haystack, size_t start, Utf16View const& needle)
+static Optional<size_t> split_match(Wtf16ByteView const& haystack, size_t start, Wtf16ByteView const& needle)
 {
     auto r = needle.length_in_code_units();
     auto s = haystack.length_in_code_units();
@@ -64,7 +64,7 @@ static Optional<size_t> split_match(Utf16View const& haystack, size_t start, Utf
 }
 
 // 6.1.4.1 StringIndexOf ( string, searchValue, fromIndex ), https://tc39.es/ecma262/#sec-stringindexof
-Optional<size_t> string_index_of(Utf16View const& string, Utf16View const& search_value, size_t from_index)
+Optional<size_t> string_index_of(Wtf16ByteView const& string, Wtf16ByteView const& search_value, size_t from_index)
 {
     // 1. Let len be the length of string.
     size_t string_length = string.length_in_code_units();
@@ -95,14 +95,14 @@ Optional<size_t> string_index_of(Utf16View const& string, Utf16View const& searc
 }
 
 // 7.2.9 Static Semantics: IsStringWellFormedUnicode ( string )
-static bool is_string_well_formed_unicode(Utf16View string)
+static bool is_string_well_formed_unicode(Wtf16ByteView string)
 {
     // OPTIMIZATION: simdutf can do this much faster.
     return string.validate();
 }
 
 // 11.1.4 CodePointAt ( string, position ), https://tc39.es/ecma262/#sec-codepointat
-CodePoint code_point_at(Utf16View const& string, size_t position)
+CodePoint code_point_at(Wtf16ByteView const& string, size_t position)
 {
     // 1. Let size be the length of string.
     // 2. Assert: position ≥ 0 and position < size.
@@ -121,7 +121,7 @@ CodePoint code_point_at(Utf16View const& string, size_t position)
     }
 
     // 6. If first is a trailing surrogate or position + 1 = size, then
-    if (Utf16View::is_low_surrogate(first) || (position + 1 == string.length_in_code_units())) {
+    if (Wtf16ByteView::is_low_surrogate(first) || (position + 1 == string.length_in_code_units())) {
         // a. Return the Record { [[CodePoint]]: cp, [[CodeUnitCount]]: 1, [[IsUnpairedSurrogate]]: true }.
         return { true, code_point, 1 };
     }
@@ -130,13 +130,13 @@ CodePoint code_point_at(Utf16View const& string, size_t position)
     auto second = string.code_unit_at(position + 1);
 
     // 8. If second is not a trailing surrogate, then
-    if (!Utf16View::is_low_surrogate(second)) {
+    if (!Wtf16ByteView::is_low_surrogate(second)) {
         // a. Return the Record { [[CodePoint]]: cp, [[CodeUnitCount]]: 1, [[IsUnpairedSurrogate]]: true }.
         return { true, code_point, 1 };
     }
 
     // 9. Set cp to UTF16SurrogatePairToCodePoint(first, second).
-    code_point = Utf16View::decode_surrogate_pair(first, second);
+    code_point = Wtf16ByteView::decode_surrogate_pair(first, second);
 
     // 10. Return the Record { [[CodePoint]]: cp, [[CodeUnitCount]]: 2, [[IsUnpairedSurrogate]]: false }.
     return { false, code_point, 2 };
@@ -1252,7 +1252,7 @@ static ThrowCompletionOr<String> transform_case(VM& vm, String const& string, Va
     // 3. Else,
     else {
         // a. Let requestedLocale be ! DefaultLocale().
-        requested_locale = String::from_utf8_without_validation(Unicode::default_locale().bytes());
+        requested_locale = String::from_wtf8_without_validation(Unicode::default_locale().bytes());
     }
 
     // 4. Let availableLocales be an Available Locales List which includes the language tags for which the Unicode Character Database contains language-sensitive case mappings. If the implementation supports additional locale-sensitive case mappings, availableLocales should also include their corresponding language tags.
@@ -1408,10 +1408,10 @@ ThrowCompletionOr<String> trim_string(VM& vm, Value input_value, TrimMode where)
     // 5. Else,
     // a. Assert: where is start+end.
     // b. Let T be the String value that is a copy of S with both leading and trailing white space removed.
-    auto trimmed_string = Utf8View(string).trim(whitespace_characters, where).as_string();
+    auto trimmed_string = Wtf8ByteView(string).trim(whitespace_characters, where).as_string();
 
     // 6. Return T.
-    return MUST(String::from_utf8(trimmed_string));
+    return MUST(String::from_wtf8(trimmed_string));
 }
 
 // 22.1.3.32 String.prototype.trim ( ), https://tc39.es/ecma262/#sec-string.prototype.trim

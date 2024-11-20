@@ -10,7 +10,7 @@
 #include <AK/Debug.h>
 #include <AK/GenericLexer.h>
 #include <AK/HashMap.h>
-#include <AK/Utf8View.h>
+#include <AK/Wtf8ByteView.h>
 #include <LibUnicode/CharacterTypes.h>
 #include <stdio.h>
 
@@ -225,7 +225,7 @@ static constexpr auto s_single_char_tokens = make_single_char_tokens_array();
 Lexer::Lexer(StringView source, StringView filename, size_t line_number, size_t line_column)
     : m_source(source)
     , m_current_token(TokenType::Eof, {}, {}, {}, 0, 0, 0)
-    , m_filename(String::from_utf8(filename).release_value_but_fixme_should_propagate_errors())
+    , m_filename(String::from_wtf8(filename).release_value_but_fixme_should_propagate_errors())
     , m_line_number(line_number)
     , m_line_column(line_column)
     , m_parsed_identifiers(adopt_ref(*new ParsedIdentifiers))
@@ -505,7 +505,7 @@ ALWAYS_INLINE u32 Lexer::current_code_point() const
         return REPLACEMENT_CHARACTER;
     if (is_ascii(substring[0]))
         return substring[0];
-    Utf8View utf_8_view { substring };
+    Wtf8ByteView utf_8_view { substring };
     return *utf_8_view.begin();
 }
 

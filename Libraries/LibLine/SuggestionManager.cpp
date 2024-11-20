@@ -11,9 +11,9 @@
 namespace Line {
 
 CompletionSuggestion::CompletionSuggestion(StringView completion, StringView trailing_trivia, StringView display_trivia, Style style)
-    : text(MUST(String::from_utf8(completion)))
-    , trailing_trivia(MUST(String::from_utf8(trailing_trivia)))
-    , display_trivia(MUST(String::from_utf8(display_trivia)))
+    : text(MUST(String::from_wtf8(completion)))
+    , trailing_trivia(MUST(String::from_wtf8(trailing_trivia)))
+    , display_trivia(MUST(String::from_wtf8(display_trivia)))
     , style(style)
     , is_valid(true)
 {
@@ -21,7 +21,7 @@ CompletionSuggestion::CompletionSuggestion(StringView completion, StringView tra
 
 void SuggestionManager::set_suggestions(Vector<CompletionSuggestion>&& suggestions)
 {
-    auto code_point_at = [](Utf8View view, size_t index) {
+    auto code_point_at = [](Wtf8ByteView view, size_t index) {
         size_t count = 0;
         for (auto cp : view) {
             if (count == index) {

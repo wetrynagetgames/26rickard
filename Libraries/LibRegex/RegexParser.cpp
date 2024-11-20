@@ -16,7 +16,7 @@
 #include <AK/StringBuilder.h>
 #include <AK/StringUtils.h>
 #include <AK/TemporaryChange.h>
-#include <AK/Utf16View.h>
+#include <AK/Wtf16ByteView.h>
 #include <LibUnicode/CharacterTypes.h>
 
 namespace regex {
@@ -2486,7 +2486,7 @@ DeprecatedFlyString ECMA262Parser::read_capture_group_specifier(bool take_starti
     StringBuilder builder;
 
     auto consume_code_point = [&] {
-        Utf8View utf_8_view { m_parser_state.lexer.source().substring_view(m_parser_state.lexer.tell() - 1) };
+        Wtf8ByteView utf_8_view { m_parser_state.lexer.source().substring_view(m_parser_state.lexer.tell() - 1) };
         if (utf_8_view.is_empty())
             return REPLACEMENT_CHARACTER;
         u32 code_point = *utf_8_view.begin();
