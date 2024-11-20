@@ -401,7 +401,8 @@ public:
 
     constexpr Color with_opacity(float opacity) const
     {
-        return with_alpha(alpha() * opacity);
+        VERIFY(opacity >= 0 && opacity <= 1);
+        return with_alpha(static_cast<u8>(round(alpha() * opacity)));
     }
 
     constexpr Color darkened(float amount = 0.5f) const
@@ -550,9 +551,9 @@ public:
             break;
         }
 
-        u8 out_r = (u8)(r * 255);
-        u8 out_g = (u8)(g * 255);
-        u8 out_b = (u8)(b * 255);
+        auto out_r = static_cast<u8>(round(r * 255));
+        auto out_g = static_cast<u8>(round(g * 255));
+        auto out_b = static_cast<u8>(round(b * 255));
         return Color(out_r, out_g, out_b);
     }
 
