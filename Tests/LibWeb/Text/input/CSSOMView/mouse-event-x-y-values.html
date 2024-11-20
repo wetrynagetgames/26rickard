@@ -1,0 +1,32 @@
+<style>
+    div {
+        width: 100px;
+        height: 100px;
+        background-color: gray;
+        transform: rotate(45deg);
+    }
+    body {
+        height: 200vh;
+    }
+</style>
+<div onClick="
+    println(event.x);
+    println(event.y);
+    println(event.screenX);
+    println(event.screenY);
+    println(event.clientX);
+    println(event.clientY);
+    println(event.pageX);
+    println(event.pageY);
+    println(event.offsetX);
+    println(event.offsetY);
+"></div>
+
+<script src="../include.js"></script>
+
+<script>
+    test(() => {
+        window.scrollBy(0, 10)
+        internals.click(50, 50);
+    });
+</script>
